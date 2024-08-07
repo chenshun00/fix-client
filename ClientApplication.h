@@ -40,6 +40,7 @@ public:
 
     //发送消息, 根据msgType发送下改撤消息
     bool send(Order&, Entrust&);
+    String trim(String&);
 
 private:
     typedef std::map<std::string,std::map<std::string, FIX::Message>> MessageMap;

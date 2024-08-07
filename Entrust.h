@@ -30,6 +30,7 @@ class Order
 {
 public:
 
+    String begin_string;
     String send_comp_id;
     String target_comp_id;
     String order_id;
