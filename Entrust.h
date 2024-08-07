@@ -29,6 +29,7 @@ public:
 class Order
 {
 public:
+
     String send_comp_id;
     String target_comp_id;
     String order_id;

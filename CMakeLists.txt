@@ -14,12 +14,23 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES fix-client_zh_CN.ts)
 
+if(WIN32)
+
+find_library(
+  QUICKFIX_LIBRARY
+  NAMES quickfixd
+  HINTS "E:/quickfix/lib"
+  PATHS "E:/quickfix/lib"
+)
+
+else()
 find_library(
   QUICKFIX_LIBRARY
   NAMES quickfix
   HINTS /usr/local/lib
   PATHS /usr/local/lib
 )
+endif()
 
 if(QUICKFIX_LIBRARY)
   message(STATUS "Found QuickFix library: ${QUICKFIX_LIBRARY}")
@@ -37,7 +48,7 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(test1
+    qt_add_executable(fix-client
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ClientApplication.h
@@ -50,7 +61,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Applicationbridge.h Applicationbridge.cpp
     )
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET test1 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#    set_property(TARGET fix-client APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
@@ -77,7 +88,7 @@ target_link_libraries(fix-client PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QUICKF
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.test1)
+  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.fix-client)
 endif()
 set_target_properties(fix-client PROPERTIES
     ${BUNDLE_ID_OPTION}
@@ -95,8 +106,12 @@ install(TARGETS fix-client
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(test1)
+    qt_finalize_executable(fix-client)
 endif()
 
+if(WIN32)
+target_include_directories(fix-client PUBLIC "E:/quickfix/include")
+else()
 target_include_directories(fix-client PUBLIC /usr/local/include)
+endif()
 target_include_directories(fix-client INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

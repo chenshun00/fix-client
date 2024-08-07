@@ -18,10 +18,13 @@ FixWidget::FixWidget(FIX::SessionSettings s,FIX::FileStoreFactory f,FIX::FileLog
     m_initiator.start();
 
     connect(ui->Order, SIGNAL(clicked()), this, SLOT(order()));
+    connect(client, &ApplicationBridge::mySignal, this, &FixWidget::receiveMySignal);
+
 }
 
 void FixWidget::receiveMySignal(const FIX::SessionID & s){
     qInfo() << "FixWidget::receiveMySignal" << s.toString() << Qt::endl;
+    ui->Session_ID->addItem(QString::fromStdString(s.toString()));
 }
 
 void FixWidget::order() {
@@ -33,10 +36,17 @@ void FixWidget::order() {
     const QString quantity = ui->Quantity->text();
     const QString account = ui->Account->text();
 
+    const QString session_id = ui->Session_ID->currentText();
+    if(!this->check(session_id, "sessionId必填")){
+        return;
+    }
+    //session反解析为sessionId
+    FIX::SessionID fix_session_id;
+    fix_session_id.fromString(session_id.toStdString());
+
 
     const QString side =   ui->Side->currentText();
     const QString position_effect = ui->Position_Effect->currentText();
-
 
 
     if (!this->check(quantity, "委托数量必填")){
@@ -50,6 +60,8 @@ void FixWidget::order() {
     }
 
     Order order;
+    order.send_comp_id = fix_session_id.getSenderCompID().getString();
+    order.target_comp_id = fix_session_id.getTargetCompID().getString();
     if (!exchange.isEmpty()){
         order.exchange = exchange.toStdString();
     }
@@ -86,6 +98,11 @@ void FixWidget::order() {
     }
 
     qInfo() << "symbol:" << symbol << ", price:" << price << Qt::endl;
+    auto res = this->client->send(order, entrust);
+    if (res){
+        this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
+        this->order_map.insert(std::make_pair(order.order_id, order));
+    }
 }
 
 FixWidget::~FixWidget()
