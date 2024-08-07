@@ -28,6 +28,7 @@ void ClientApplication::onLogon(const FIX::SessionID & sessionId)
 void ClientApplication::onLogout(const FIX::SessionID & s)
 {
     qInfo() << "ClientApplication::onLogout," << s.toString();
+    this->logout(s);
 }
 
 void ClientApplication::toAdmin(FIX::Message & m, const FIX::SessionID & s)
@@ -120,7 +121,7 @@ void ClientApplication::onMessage(FIX42::BusinessMessageReject & m, const FIX::S
 
 }
 
-void ClientApplication::send(Order& order, Entrust& entrust){
+bool ClientApplication::send(Order& order, Entrust& entrust){
 
     String msg_type =entrust.m_msg_type;
 

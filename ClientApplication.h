@@ -39,7 +39,7 @@ public:
     void onMessage(FIX42::OrderCancelReject &, const FIX::SessionID &) override;
 
     //发送消息, 根据msgType发送下改撤消息
-    void send(Order&, Entrust&);
+    bool send(Order&, Entrust&);
 
 private:
     typedef std::map<std::string,std::map<std::string, FIX::Message>> MessageMap;
