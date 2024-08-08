@@ -42,6 +42,7 @@ public:
     //发送消息, 根据msgType发送下改撤消息
     bool send(Order&, Entrust&);
     String trim(String&);
+    String getValue(FIX42::ExecutionReport& m, int tag);
 
     const Entrust* getEntrust(String cl_ord_id) 
     {
@@ -67,9 +68,11 @@ private:
     typedef std::map<std::string,std::map<std::string, FIX::Message>> MessageMap;
     typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
     typedef std::map<String/*orderId*/, Order> OrderMap;
+    typedef std::map<String/*orderId*/, ClientExecutionReport> ExecutionReportMap;
     MessageMap maps;
     EntrustMap entrust_map;
     OrderMap order_map;
+    ExecutionReportMap reportMap;
 };
 
 

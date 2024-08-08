@@ -23,23 +23,21 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES fix-client_zh_CN.ts)
 
-if(WIN32)
-
-find_library(
-  QUICKFIX_LIBRARY
-  NAMES quickfixd
-  HINTS "E:/quickfix/lib"
-  PATHS "E:/quickfix/lib"
-)
-
-else()
-find_library(
-  QUICKFIX_LIBRARY
-  NAMES quickfix
-  HINTS /usr/local/lib
-  PATHS /usr/local/lib
-)
-endif()
+#if(WIN32)
+#find_library(
+#  QUICKFIX_LIBRARY
+#  NAMES quickfixd
+#  HINTS "E:/quickfix/lib"
+#  PATHS "E:/quickfix/lib"
+#)
+#else()
+#find_library(
+#  QUICKFIX_LIBRARY
+#  NAMES quickfix
+#  HINTS /usr/local/lib
+#  PATHS /usr/local/lib
+#)
+#endif()
 
 if(QUICKFIX_LIBRARY)
   message(STATUS "Found QuickFix library: ${QUICKFIX_LIBRARY}")
@@ -91,7 +89,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(fix-client PUBLIC Qt${QT_VERSION_MAJOR}::Widgets ${QUICKFIX_LIBRARY})
+target_link_libraries(fix-client PUBLIC Qt${QT_VERSION_MAJOR}::Widgets "${CMAKE_CURRENT_SOURCE_DIR}/lib/quickfix/quickfixd.lib" "${CMAKE_CURRENT_SOURCE_DIR}/lib/spdlog/spdlogd.lib")
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -118,9 +116,14 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(fix-client)
 endif()
 
-if(WIN32)
-target_include_directories(fix-client PUBLIC "E:/quickfix/include")
-else()
-target_include_directories(fix-client PUBLIC /usr/local/include)
-endif()
+#if(WIN32)
+#target_include_directories(fix-client PUBLIC "E:/quickfix/include")
+#else()
+#target_include_directories(fix-client PUBLIC /usr/local/include)
+#endif()
+
+target_include_directories(fix-client PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/quickfix/include" "${CMAKE_CURRENT_SOURCE_DIR}/include/spdlog/include")
 target_include_directories(fix-client INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+message("-- ${CMAKE_CURRENT_SOURCE_DIR}/include/quickfix/include")
+message("-- ${CMAKE_CURRENT_SOURCE_DIR}/include/spdlog/include")

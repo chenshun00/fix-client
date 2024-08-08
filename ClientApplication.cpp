@@ -2,6 +2,7 @@
 #include "SessionHolder.h"
 
 #include <QCoreApplication>
+#include <quickfix/FixValues.h>
 
 
 ClientApplication::ClientApplication(QObject *parent): ApplicationBridge(parent), FIX::Application() {
@@ -93,6 +94,35 @@ void ClientApplication::onMessage(FIX42::ExecutionReport & m, const FIX::Session
     if (!order)
     {
         return;
+    }
+    FIX::MsgSeqNum num;
+    m.getHeader().getField(num);
+    report.order_id = order->order_id;
+    report.msg_seq_num = num.getValue();
+    report.symbol = order->symbol;
+    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
+    report.cl_ord_id = entrust->m_cl_ord_id;
+    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
+    report.exec_id = this->getValue(m, FIX::FIELD::ExecID);
+    report.text = this->getValue(m, FIX::FIELD::Text);
+    report.exec_type = this->getValue(m, FIX::FIELD::ExecType);
+    report.ord_status = this->getValue(m, FIX::FIELD::OrdStatus);
+    report.last_px = std::stod(this->getValue(m, FIX::FIELD::LastPx));
+    report.last_share = std::stod(this->getValue(m, FIX::FIELD::LastShares));
+    report.cum_qty = std::stod(this->getValue(m, FIX::FIELD::CumQty));
+    report.leaves_qty = std::stod(this->getValue(m, FIX::FIELD::LeavesQty));
+
+    this->reportMap.insert(std::make_pair(report.order_id, report));
+}
+
+
+String ClientApplication::getValue(FIX42::ExecutionReport& m, int tag) {
+    try {
+        return m.getField(tag);
+    }
+    catch (FIX::FieldNotFound& f) 
+    {
+        return "0";
     }
 }
 
@@ -208,6 +238,7 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
         this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
         this->order_map.insert(std::make_pair(order.order_id, order));
     }
+    return res;
 }
 
 String ClientApplication::trim(String & value){
