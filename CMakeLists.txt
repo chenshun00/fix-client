@@ -9,15 +9,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
-# set(CMAKE_PREFIX_PATH "/Users/chenshun/Qt/6.7.2")
-# set("QT_DIR" "/Users/chenshun/Qt/6.7.2")
+# 加载quickfix和QT配置包
 if(WIN32)
 set(CMAKE_PREFIX_PATH "C:/Qt/6.7.2/msvc2019_64" ${CMAKE_PREFIX_PATH})
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules" "C:/Qt/6.7.2/msvc2019_64/lib/cmake" ${CMAKE_MODULE_PATH})
 else() 
 set(CMAKE_PREFIX_PATH "/Users/chenshun/Qt/6.7.2/macos" ${CMAKE_PREFIX_PATH})
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules" "/Users/chenshun/Qt/6.7.2/macos/lib/cmake" ${CMAKE_MODULE_PATH})
-
 endif()
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
