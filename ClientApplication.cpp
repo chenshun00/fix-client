@@ -166,7 +166,7 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
         
     }
 
-    FIX::Session::sendToTarget(message);
+    return FIX::Session::sendToTarget(message);
 }
 
 String ClientApplication::trim(String & value){

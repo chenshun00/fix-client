@@ -12,7 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 # set(CMAKE_PREFIX_PATH "/Users/chenshun/Qt/6.7.2")
 # set("QT_DIR" "/Users/chenshun/Qt/6.7.2")
 if(WIN32)
-
+set(CMAKE_PREFIX_PATH "C:/Qt/6.7.2/msvc2019_64" ${CMAKE_PREFIX_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules" "C:/Qt/6.7.2/msvc2019_64/lib/cmake" ${CMAKE_MODULE_PATH})
 else() 
 set(CMAKE_PREFIX_PATH "/Users/chenshun/Qt/6.7.2/macos" ${CMAKE_PREFIX_PATH})
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules" "/Users/chenshun/Qt/6.7.2/macos/lib/cmake" ${CMAKE_MODULE_PATH})
@@ -92,7 +93,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(fix-client PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QUICKFIX_LIBRARY})
+target_link_libraries(fix-client PUBLIC Qt${QT_VERSION_MAJOR}::Widgets ${QUICKFIX_LIBRARY})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
