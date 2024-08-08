@@ -62,6 +62,8 @@ void FixWidget::order() {
     Order order;
     order.send_comp_id = fix_session_id.getSenderCompID().getString();
     order.target_comp_id = fix_session_id.getTargetCompID().getString();
+    order.begin_string = fix_session_id.getBeginString().getString();
+    
     if (!exchange.isEmpty()){
         order.exchange = exchange.toStdString();
     }
@@ -114,7 +116,7 @@ FixWidget::~FixWidget()
 }
 
 String FixWidget::getId(){
-    return QUuid::createUuid().toString().toStdString();
+    return QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString();
 }
 
 bool FixWidget::check(const QString& field, const QString& msg){

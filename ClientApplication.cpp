@@ -127,20 +127,24 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
 
     
     FIX::Message message;
+    message.getHeader().setField(FIX::BeginString(order.begin_string));
     message.getHeader().setField(FIX::SenderCompID(order.send_comp_id));
     message.getHeader().setField(FIX::TargetCompID(order.target_comp_id));
     message.getHeader().setField(FIX::MsgType(msg_type));
 
+    message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
+    message.setField(FIX::TransactTime(FIX::UtcTimeStamp::nowUtc()));
+
     if (msg_type == FIX::MsgType_NewOrderSingle)
     {
-        message.setField(FIX::OrderQty(entrust.m_order_qty));
+        message.setField(FIX::OrdType(order.ord_type));
         if (order.ord_type == FIX::OrdType_LIMIT)
         {
             message.setField(FIX::Price(entrust.m_price));
         }
+        message.setField(FIX::OrderQty(entrust.m_order_qty));
         message.setField(FIX::SecurityType(order.security_type));
-        message.setField(FIX::OrdType(order.ord_type));
-        message.setField(FIX::Symbol(order.symbol));
+        message.setField(FIX::Symbol(this->trim(order.symbol)));
         message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
         message.setField(FIX::Side(order.side));
         if (order.exchange.size() > 0)
@@ -163,4 +167,10 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
     }
 
     FIX::Session::sendToTarget(message);
+}
+
+String ClientApplication::trim(String & value){
+    auto str_pos = value.find_first_not_of("\t\v\f");
+    auto end_pos = value.find_last_not_of("\t\v\f");
+    return String(value, str_pos, end_pos+1);
 }
