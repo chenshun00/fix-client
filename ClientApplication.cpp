@@ -2,6 +2,7 @@
 #include "SessionHolder.h"
 
 #include <QCoreApplication>
+#include <quickfix/fix42/NewOrderSingle.h>
 
 
 ClientApplication::ClientApplication(QObject *parent): ApplicationBridge(parent), FIX::Application() {
@@ -157,9 +158,11 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
         }
         message.setField(FIX::PositionEffect(order.open_close));
         
-        FIX::Group no_trading_sessions(386,336);
-        no_trading_sessions.addGroup(336, order.trading_session_id);
-        message.addGroup(no_trading_sessions);
+        FIX42::NewOrderSingle::NoTradingSessions sessions;
+        FIX::TradingSessionID session_id(order.trading_session_id);
+        sessions.set(session_id);
+
+        message.addGroup(sessions);
 
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest)
