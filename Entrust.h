@@ -41,7 +41,7 @@ public:
     char side;
     char ord_type;
     double price;
-    char trading_session_id;
+    String trading_session_id;
     String exchange;
     String account;
     String security_type;

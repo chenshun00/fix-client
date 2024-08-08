@@ -156,6 +156,11 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
             message.setField(FIX::Account(order.account));
         }
         message.setField(FIX::PositionEffect(order.open_close));
+        
+        FIX::Group no_trading_sessions(386,336);
+        no_trading_sessions.addGroup(336, order.trading_session_id);
+        message.addGroup(no_trading_sessions);
+
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest)
     {

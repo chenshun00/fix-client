@@ -91,9 +91,9 @@ void FixWidget::order() {
     QRadioButton* pbtn = qobject_cast<QRadioButton*>(ui->Trading_Session->checkedButton());
     QString name = pbtn->objectName();
     if (QString::compare(name, "Trading_Session_0") == 0){
-        order.trading_session_id = '0';
+        order.trading_session_id = "0";
     }else if (QString::compare(name, "Trading_Session_1") == 0) {
-        order.trading_session_id = '1';
+        order.trading_session_id = "1";
     }else {
         QMessageBox::warning(this, "盘前盘后参数错误", "参数错误");
         return;
