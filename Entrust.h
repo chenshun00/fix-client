@@ -59,8 +59,16 @@ public:
 class ClientExecutionReport
 {
 public:
+    int msg_seq_num;
+    String symbol;
+    String side;
+    String last_px;
+    String last_share;
+    double leaves_qty;
+    double cum_qty;
     String exec_type;
-    String ord_status;
+    char ord_status;
+    String text;
     String cl_ord_id;
     String orig_cl_ord_id;
     String exec_id;

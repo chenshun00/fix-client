@@ -77,7 +77,23 @@ void ClientApplication::fromApp(const FIX::Message & m, const FIX::SessionID & s
 
 void ClientApplication::onMessage(FIX42::ExecutionReport & m, const FIX::SessionID & s)
 {
-    //todo 怎么把message 转换成一个普通的对象
+    ClientExecutionReport report = ClientExecutionReport();
+
+    FIX::ClOrdID cl_ord_id;
+    m.getField(cl_ord_id);
+    report.cl_ord_id = cl_ord_id.getFixString();
+
+
+    auto entrust = this->getEntrust(report.cl_ord_id);
+    if (!entrust)
+    {
+        return;
+    }    
+    auto order = this->getOrder(entrust->m_order_id);
+    if (!order)
+    {
+        return;
+    }
 }
 
 void ClientApplication::onMessage(FIX42::OrderCancelReject & m, const FIX::SessionID & s)
@@ -132,11 +148,11 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
     message.getHeader().setField(FIX::TargetCompID(order.target_comp_id));
     message.getHeader().setField(FIX::MsgType(msg_type));
 
-    message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
-    message.setField(FIX::TransactTime(FIX::UtcTimeStamp::nowUtc()));
+    message.setField(FIX::TransactTime(FIX::UtcTimeStamp::nowUtc(),6));
 
     if (msg_type == FIX::MsgType_NewOrderSingle)
     {
+        message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
         message.setField(FIX::OrdType(order.ord_type));
         if (order.ord_type == FIX::OrdType_LIMIT)
         {
@@ -159,14 +175,39 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest)
     {
-        /* code */
+        if (order.account.size() > 0)
+        {
+            message.setField(FIX::Account(order.account));
+        }
+        message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
+        message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
+        message.setField(FIX::Symbol(this->trim(order.symbol)));
+        message.setField(FIX::Side(order.side));
+        message.setField(FIX::OrderQty(entrust.m_order_qty));
+        message.setField(FIX::OrdType(order.ord_type));
+        if (order.ord_type == FIX::OrdType_LIMIT)
+        {
+            message.setField(FIX::Price(entrust.m_price));
+        }
     }
     if (msg_type == FIX::MsgType_OrderCancelRequest)
     {
-        
+        if (order.account.size() > 0)
+        {
+            message.setField(FIX::Account(order.account));
+        }
+        message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
+        message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
+        message.setField(FIX::Symbol(this->trim(order.symbol)));
+        message.setField(FIX::Side(order.side));
+        message.setField(FIX::OrderQty(entrust.m_order_qty));
     }
 
-    return FIX::Session::sendToTarget(message);
+    bool res =  FIX::Session::sendToTarget(message);
+    if (res) {
+        this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
+        this->order_map.insert(std::make_pair(order.order_id, order));
+    }
 }
 
 String ClientApplication::trim(String & value){

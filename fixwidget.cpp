@@ -100,11 +100,7 @@ void FixWidget::order() {
     }
 
     qInfo() << "symbol:" << symbol << ", price:" << price << Qt::endl;
-    auto res = this->client->send(order, entrust);
-    if (res){
-        this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
-        this->order_map.insert(std::make_pair(order.order_id, order));
-    }
+    this->client->send(order, entrust);
 }
 
 FixWidget::~FixWidget()
