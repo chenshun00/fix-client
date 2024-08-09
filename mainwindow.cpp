@@ -40,6 +40,7 @@ void MainWindow::print()
         QString file = dialog.selectedFiles().at(0);
         auto name = file.toStdString();
 
+        FixWidget* fix = nullptr;
         try {
             FIX::SessionSettings settings(name);
 
@@ -53,15 +54,23 @@ void MainWindow::print()
 
             ClientApplication* client = new ClientApplication(&settings);
 
-            FixWidget * fix = new FixWidget(settings,file_store_factory,file_log,client);
+            fix = new FixWidget(settings,file_store_factory,file_log,client);
 
             this->hide();
             fix->show();
 
         } catch(FIX::ConfigError& e){
+            if (fix)
+            {
+                delete fix;
+            }
             auto detail = e.detail;
             QMessageBox::warning(this, "ERROR", QString::fromStdString(detail));
         } catch (...) {
+            if (fix)
+            {
+                delete fix;
+            }
             QMessageBox::warning(this, "ERROR", "文件错误");
         }
     }
