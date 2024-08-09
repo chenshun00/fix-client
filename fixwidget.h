@@ -9,6 +9,7 @@
 #include "map"
 
 #include "ClientApplication.h"
+#include "FixClientLogFactory.h"
 
 #include <QWidget>
 
@@ -21,7 +22,7 @@ class FixWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit FixWidget(FIX::SessionSettings,FIX::FileStoreFactory,FIX::FileLogFactory,ClientApplication* c,QWidget *parent = nullptr);
+    explicit FixWidget(FIX::SessionSettings,FIX::FileStoreFactory, FixClientLogFacotry,ClientApplication*,QWidget *parent = nullptr);
     ~FixWidget();
 
 public slots:
@@ -32,7 +33,7 @@ private:
 
     FIX::SessionSettings  sessionSettings;
     FIX::FileStoreFactory file_store_factory;
-    FIX::FileLogFactory file_log;
+    FixClientLogFacotry file_log;
     ClientApplication* client;
     FIX::ThreadedSocketInitiator m_initiator;
     Ui::FixWidget *ui;

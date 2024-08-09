@@ -6,12 +6,30 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>826</height>
+    <width>1027</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>FixClient</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
+  </property>
+  <property name="statusTip">
+   <string>hello world</string>
+  </property>
+  <property name="whatsThis">
+   <string>hello world</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>true</bool>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-image: url(:/new/prefix1/farmer-8920644_1280.webp);</string>
+  </property>
+  <property name="documentMode">
+   <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="LoadFile">
@@ -20,9 +38,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>230</y>
-      <width>101</width>
+      <x>470</x>
+      <y>260</y>
+      <width>91</width>
       <height>41</height>
      </rect>
     </property>
@@ -63,8 +81,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>24</height>
+     <width>1027</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_1">
@@ -90,7 +108,17 @@
    <addaction name="menu_2"/>
    <addaction name="menu"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
   <action name="actionwokao">
    <property name="text">
     <string>wokao</string>
@@ -107,6 +135,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="Resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

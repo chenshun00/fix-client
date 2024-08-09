@@ -4,7 +4,7 @@
 #include <QUuid>
 
 
-FixWidget::FixWidget(FIX::SessionSettings s,FIX::FileStoreFactory f,FIX::FileLogFactory fl,ClientApplication* c,QWidget *parent)
+FixWidget::FixWidget(FIX::SessionSettings s,FIX::FileStoreFactory f, FixClientLogFacotry fl,ClientApplication* c,QWidget *parent)
     : QWidget(parent),
     sessionSettings(s),
     file_store_factory(f),

@@ -15,7 +15,7 @@ ClientApplication::ClientApplication(FIX::SessionSettings* s,QObject *parent): A
 
 void ClientApplication::onCreate(const FIX::SessionID & sessionId)
 {
-    spdlog::info("ClientApplication::onCreate, sessionId: {}", sessionId);
+    spdlog::info("ClientApplication::onCreate, sessionId: {}", sessionId.toString());
 }
 
 void ClientApplication::onLogon(const FIX::SessionID & sessionId)
@@ -23,20 +23,19 @@ void ClientApplication::onLogon(const FIX::SessionID & sessionId)
     FIX::Session*  session = FIX::Session::lookupSession(sessionId);
     if (!session)
     {
-        qCritical() << "session is not exist, " << sessionId.toString();
-        spdlog::critical("session is not exist, sessionId:{}", sessionId);
+        spdlog::critical("session is not exist, sessionId:{}", sessionId.toString());
         return ;
     }
     SessionHolder::Instance().insert(sessionId, session);
-    spdlog::info("emitSignal, sessionId:{}", sessionId);
+    spdlog::info("emitSignal, sessionId:{}", sessionId.toString());
     this->emitMySignal(sessionId);
 }
 
 void ClientApplication::onLogout(const FIX::SessionID & s)
 {
-    spdlog::info("start ClientApplication::onLogout, sessionId:{}, emit logout signal", s);
+    spdlog::info("start ClientApplication::onLogout, sessionId:{}, emit logout signal", s.toString());
     this->logout(s);
-    spdlog::info("end ClientApplication::onLogout, sessionId:{}, emit logout signal", s);
+    spdlog::info("end ClientApplication::onLogout, sessionId:{}, emit logout signal", s.toString());
 }
 
 void ClientApplication::toAdmin(FIX::Message & m, const FIX::SessionID & s)

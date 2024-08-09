@@ -14,6 +14,7 @@
 #include "ClientApplication.h"
 #include "Context.h"
 #include "fixwidget.h"
+#include "FixClientLogFactory.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -48,7 +49,7 @@ void MainWindow::print()
             }
 
             FIX::FileStoreFactory file_store_factory(settings);
-            FIX::FileLogFactory file_log(settings);
+            FixClientLogFacotry file_log(settings);
 
             ClientApplication* client = new ClientApplication(&settings);
 

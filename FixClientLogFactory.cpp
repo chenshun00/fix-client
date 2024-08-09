@@ -2,43 +2,36 @@
 
 FIX::Log* FixClientLogFacotry::create()
 {
-    return nullptr;
+    return new FixClientLog(this->m_path);
 }
 
-FIX::Log* FixClientLogFacotry::create(const FIX::SessionID&)
+FIX::Log* FixClientLogFacotry::create(const FIX::SessionID& sessionId)
 {
-    return nullptr;
+    return new FixClientLog(this->m_path, sessionId);
 }
 
 void FixClientLogFacotry::destroy(FIX::Log* log)
 {
+    delete log;
 }
 
-FixClientLog::FixClientLog(const std::string& path)
+FixClientLog::FixClientLog(const std::string& path):m_path(path)
 {
+    this->init(path, "Global");
 }
 
-FixClientLog::FixClientLog(const std::string& path, const std::string& backupPath)
-{
-}
 
-FixClientLog::FixClientLog(const std::string& path, const SessionID& sessionID)
+FixClientLog::FixClientLog(const std::string& path, const FIX::SessionID& sessionID):m_path(path)
 {
-}
-
-FixClientLog::FixClientLog(const std::string& path, const std::string& backupPath, const SessionID& sessionID)
-{
-}
-
-FixClientLog::~FixClientLog()
-{
+    this->init(path, sessionID.toString());
 }
 
 std::string FixClientLog::generatePrefix(const FIX::SessionID& sessionID)
 {
-    return std::string();
+    return sessionID.toString();
 }
 
-void FixClientLog::init(std::string path, std::string backupPath, const std::string& prefix)
+void FixClientLog::init(std::string path, const std::string& prefix)
 {
+    this->m_fullPrefix = prefix;
 }

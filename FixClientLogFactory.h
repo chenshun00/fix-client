@@ -3,10 +3,12 @@
 #define FIXCLIENTLOGFACTORY_H
 
 #include <quickfix/Log.h>
+#include <quickfix/Exceptions.h>
 #include <quickfix/SessionSettings.h>
 #include <quickfix/FieldConvertors.h>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include <string>
 
@@ -17,11 +19,22 @@
 class FixClientLogFacotry : public FIX::LogFactory
 {
 public:
-	FixClientLogFacotry(const FIX::SessionSettings& settings): m_settings(settings), m_globalLog(nullptr), m_globalLogCount(0) {};
-	
-	FixClientLogFacotry(const std::string& path): m_path(path), m_backupPath(path), m_globalLog(nullptr), m_globalLogCount(0) {};
+	FixClientLogFacotry(const FIX::SessionSettings& settings): m_settings(settings) {
+		auto dict = m_settings.get();
+		if (dict.has(FIX::FILE_LOG_PATH))
+		{
+			this->m_path = dict.getString(FIX::FILE_LOG_PATH);
+		}
+		else
+		{
+			throw FIX::ConfigError("Î´ÅäÖÃFileLogPath");
+		}
 
-	FixClientLogFacotry(const std::string& path, const std::string& backupPath) : m_path(path), m_backupPath(backupPath), m_globalLog(nullptr), m_globalLogCount(0) {};
+		auto logger = spdlog::rotating_logger_mt("global", this->m_path+"/Logs/RotatingFileLog.txt", 1024 * 1024 * 1024, 5);
+		spdlog::set_default_logger(logger);
+	};
+	
+	FixClientLogFacotry(const std::string& path): m_path(path) {};
 
 	~FixClientLogFacotry() = default;
 public:
@@ -31,10 +44,7 @@ public:
 
 private:
 	std::string m_path;
-	std::string m_backupPath;
 	FIX::SessionSettings m_settings;
-	FIX::Log* m_globalLog;
-	int32_t m_globalLogCount;
 };
 
 
@@ -42,13 +52,11 @@ class FixClientLog : public FIX::Log {
 
 public:
 	FixClientLog(const std::string& path);
-	FixClientLog(const std::string& path, const std::string& backupPath);
 	FixClientLog(const std::string& path, const FIX::SessionID& sessionID);
-	FixClientLog(const std::string& path, const std::string& backupPath, const FIX::SessionID& sessionID);
-	virtual ~FixClientLog();
+	~FixClientLog() = default;
 
-	void clear();
-	void backup();
+	void clear(){}
+	void backup(){}
 
 	void onIncoming(const std::string& value)
 	{
@@ -65,11 +73,10 @@ public:
 
 private:
 	std::string generatePrefix(const FIX::SessionID& sessionID);
-	void init(std::string path, std::string backupPath, const std::string& prefix);
+	void init(std::string path, const std::string& prefix);
 
-	std::string m_messagesFileName;
-	std::string m_eventFileName;
+	std::string m_path;
+	std::string m_fileName;
 	std::string m_fullPrefix;
-	std::string m_fullBackupPrefix;
 };
 #endif
