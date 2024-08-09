@@ -76,3 +76,4 @@ build
 .vs
 CMakePresets.json
 CMakeUserPresets.json
+out
