@@ -50,7 +50,7 @@ void MainWindow::print()
             FIX::FileStoreFactory file_store_factory(settings);
             FIX::FileLogFactory file_log(settings);
 
-            ClientApplication* client = new ClientApplication();
+            ClientApplication* client = new ClientApplication(&settings);
 
             FixWidget * fix = new FixWidget(settings,file_store_factory,file_log,client);
 

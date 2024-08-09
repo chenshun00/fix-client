@@ -4,14 +4,18 @@
 #include <QCoreApplication>
 #include <quickfix/FixValues.h>
 
+#include <spdlog/spdlog.h>
 
-ClientApplication::ClientApplication(QObject *parent): ApplicationBridge(parent), FIX::Application() {
+#include <regex>
 
+
+ClientApplication::ClientApplication(FIX::SessionSettings* s,QObject *parent): ApplicationBridge(parent), FIX::Application(),m_settings(s) {
+    spdlog::info("ClientApplication instantiate");
 }
 
 void ClientApplication::onCreate(const FIX::SessionID & sessionId)
 {
-    qInfo() << "ClientApplication::onCreate," << sessionId.toString();
+    spdlog::info("ClientApplication::onCreate, sessionId: {}", sessionId);
 }
 
 void ClientApplication::onLogon(const FIX::SessionID & sessionId)
@@ -20,27 +24,56 @@ void ClientApplication::onLogon(const FIX::SessionID & sessionId)
     if (!session)
     {
         qCritical() << "session is not exist, " << sessionId.toString();
+        spdlog::critical("session is not exist, sessionId:{}", sessionId);
         return ;
     }
     SessionHolder::Instance().insert(sessionId, session);
+    spdlog::info("emitSignal, sessionId:{}", sessionId);
     this->emitMySignal(sessionId);
 }
 
 void ClientApplication::onLogout(const FIX::SessionID & s)
 {
-    qInfo() << "ClientApplication::onLogout," << s.toString();
+    spdlog::info("start ClientApplication::onLogout, sessionId:{}, emit logout signal", s);
     this->logout(s);
+    spdlog::info("end ClientApplication::onLogout, sessionId:{}, emit logout signal", s);
 }
 
 void ClientApplication::toAdmin(FIX::Message & m, const FIX::SessionID & s)
-{
-    qInfo() << "ClientApplication::toAdmin," << m.toString() << Qt::endl;
+{   
+    if (m.getHeader().isSetField(FIX::FIELD::MsgType) && m.getHeader().getField(FIX::FIELD::MsgType) == FIX::MsgType_Logon)
+    {
+        auto dataDic = this->m_settings->get(s);
+        if (dataDic.has("RawData"))
+        {
+            String rawData = dataDic.getString("RawData");
+            m.setField(FIX::RawData(rawData));
+            m.setField(FIX::RawDataLength(rawData.size()));
+        }
+        if (dataDic.has("Password"))
+        {
+            String password = dataDic.getString("Password");
+            m.setField(FIX::Password(password));
+        }
+
+        if (dataDic.has("ResetSeqNumFlag") && dataDic.getString("ResetSeqNumFlag") == "Y"){}
+        {
+            auto session = FIX::Session::lookupSession(s);
+            auto store = session->getStore();
+            if (store)
+            {
+                spdlog::info("nextTargetSeqNum:{}, nextSenderSeqNum:{}", store->getNextTargetMsgSeqNum(), store->getNextSenderMsgSeqNum());
+                if (store->getNextSenderMsgSeqNum() == 1 && store->getNextTargetMsgSeqNum() == 1)
+                {
+                    m.setField(FIX::ResetSeqNumFlag(TRUE));
+                }
+            }
+        }
+    }
 }
 
 void ClientApplication::toApp(FIX::Message & m, const FIX::SessionID & s)
 {
-    qInfo() << "ClientApplication::toApp," << s.toString();
-
     auto seq = m.getHeader().getFieldPtr(FIX::FIELD::MsgSeqNum);
     auto tag = seq->getString();
 
@@ -67,7 +100,6 @@ void ClientApplication::toApp(FIX::Message & m, const FIX::SessionID & s)
 
 void ClientApplication::fromAdmin(const FIX::Message & m, const FIX::SessionID & s)
 {
-    qInfo() << "ClientApplication::fromAdmin," << s.toString() <<"," << m.toString();
     this->crack(m, s);
 }
 

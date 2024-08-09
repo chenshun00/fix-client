@@ -12,13 +12,15 @@
 #include <quickfix/fix42/BusinessMessageReject.h>
 #include <quickfix/fix42/OrderCancelReject.h>
 
+#include <quickfix/SessionSettings.h>
+
 #include "Applicationbridge.h"
 #include "Entrust.h"
 
 class ClientApplication : public ApplicationBridge,public FIX::Application, FIX::MessageCracker
 {
 public:
-    explicit ClientApplication(QObject *parent = nullptr);
+    explicit ClientApplication(FIX::SessionSettings*,QObject *parent = nullptr);
 
     // Application interface
 public:
@@ -69,6 +71,9 @@ private:
     typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
     typedef std::map<String/*orderId*/, Order> OrderMap;
     typedef std::map<String/*orderId*/, ClientExecutionReport> ExecutionReportMap;
+
+    FIX::SessionSettings* m_settings;
+
     MessageMap maps;
     EntrustMap entrust_map;
     OrderMap order_map;
