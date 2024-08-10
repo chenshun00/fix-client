@@ -46,14 +46,11 @@ public:
     String security_type;
     char open_close;
     double cum_qty=0;
+    double leaves_qty=0;
     String ord_status;
 public:
     Order(/* args */){}
     ~Order() = default;
-
-    String calculator_leaves_qty(){
-        return std::to_string(order_qty - cum_qty);
-    }
 };
 
 class ClientExecutionReport

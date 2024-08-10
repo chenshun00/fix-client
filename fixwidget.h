@@ -6,6 +6,8 @@
 #include "quickfix/FileStore.h"
 #include "quickfix/FileLog.h"
 
+#include "spdlog/logger.h"
+
 #include "map"
 
 #include "ClientApplication.h"
@@ -28,6 +30,7 @@ public:
 public slots:
     void order();
     void receiveMySignal(const FIX::SessionID &); // 接收信号的槽
+    void receiveOrder(const Order &); // 接收信号的槽
 
 private:
 
@@ -38,7 +41,7 @@ private:
     FIX::ThreadedSocketInitiator m_initiator;
     Ui::FixWidget *ui;
 
-    String getId();
+    static String getId();
     bool check(const QString& ,const QString&);
 };
 

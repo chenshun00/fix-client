@@ -64,7 +64,7 @@ void ClientApplication::toAdmin(FIX::Message & m, const FIX::SessionID & s)
                 spdlog::info("nextTargetSeqNum:{}, nextSenderSeqNum:{}", store->getNextTargetMsgSeqNum(), store->getNextSenderMsgSeqNum());
                 if (store->getNextSenderMsgSeqNum() == 1 && store->getNextTargetMsgSeqNum() == 1)
                 {
-                    m.setField(FIX::ResetSeqNumFlag(TRUE));
+                    m.setField(FIX::ResetSeqNumFlag(true));
                 }
             }
         }
@@ -224,11 +224,11 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
         message.setField(FIX::Symbol(this->trim(order.symbol)));
         message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
         message.setField(FIX::Side(order.side));
-        if (order.exchange.size() > 0)
+        if (order.exchange.length() > 0)
         {
             message.setField(FIX::ExDestination(order.exchange));
         }
-        if (order.account.size() > 0)
+        if (order.account.length() > 0)
         {
             message.setField(FIX::Account(order.account));
         }
@@ -268,6 +268,8 @@ bool ClientApplication::send(Order& order, Entrust& entrust){
     if (res) {
         this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
         this->order_map.insert(std::make_pair(order.order_id, order));
+
+        this->emitPlaceOrder(order);
     }
     return res;
 }

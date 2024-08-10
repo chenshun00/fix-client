@@ -27,7 +27,7 @@ public:
 		}
 		else
 		{
-			throw FIX::ConfigError("Î´ÅäÖÃFileLogPath");
+			throw FIX::ConfigError("FileLogPath");
 		}
 
 		auto logger = spdlog::rotating_logger_mt("global", this->m_path+"/Logs/RotatingFileLog.txt", 1024 * 1024 * 1024, 5);
@@ -60,15 +60,15 @@ public:
 
 	void onIncoming(const std::string& value)
 	{
-		spdlog::info("onIncoming {},{}£¬ message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
+		spdlog::info("onIncoming {},{} message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
 	}
 	void onOutgoing(const std::string& value)
 	{
-		spdlog::info("onOutgoing {},{}£¬ message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
+		spdlog::info("onOutgoing {},{} message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
 	}
 	void onEvent(const std::string& value)
 	{
-		spdlog::info("onEvent {},{}£¬ message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
+		spdlog::info("onEvent {},{} message:{}", FIX::UtcTimeStampConvertor::convert(FIX::UtcTimeStamp::now(), 9), this->m_fullPrefix, value);
 	}
 
 private:
