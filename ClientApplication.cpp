@@ -131,7 +131,7 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
             message.setField(FIX::Account(order.account));
         }
         message.setField(FIX::PositionEffect(order.open_close));
-        
+
         FIX42::NewOrderSingle::NoTradingSessions sessions;
         FIX::TradingSessionID session_id(order.trading_session_id);
         sessions.set(session_id);
@@ -174,13 +174,10 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
     return res;
 }
 
-void ClientApplication::onMessage(FIX42::ExecutionReport &m, const FIX::SessionID &s) {
+void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::SessionID &s) {
     ClientExecutionReport report = ClientExecutionReport();
 
-    FIX::ClOrdID cl_ord_id;
-    m.getField(cl_ord_id);
-    report.cl_ord_id = cl_ord_id.getFixString();
-
+    report.cl_ord_id = ClientApplication::getValue(m, FIX::FIELD::ClOrdID);
 
     auto entrust = this->getEntrust(report.cl_ord_id);
     if (!entrust) {
@@ -215,7 +212,7 @@ void ClientApplication::onMessage(FIX42::ExecutionReport &m, const FIX::SessionI
     }
 }
 
-void ClientApplication::onMessage(FIX42::OrderCancelReject &m, const FIX::SessionID &s) {
+void ClientApplication::onMessage(const FIX42::OrderCancelReject &m, const FIX::SessionID &s) {
     auto report = ClientExecutionReport();
     //改单和撤单拒绝
     report.cl_ord_id = ClientApplication::getValue(m, FIX::FIELD::ClOrdID);
@@ -242,7 +239,7 @@ void ClientApplication::onMessage(FIX42::OrderCancelReject &m, const FIX::Sessio
     }
 }
 
-void ClientApplication::onMessage(FIX42::Reject &m, const FIX::SessionID &s) {
+void ClientApplication::onMessage(const FIX42::Reject &m, const FIX::SessionID &s) {
     std::string ref = m.getFieldPtr(FIX::FIELD::RefSeqNum)->getString();
     const FIX::SenderCompID &sendCompId = s.getSenderCompID();
 
@@ -287,7 +284,7 @@ void ClientApplication::onMessage(FIX42::Reject &m, const FIX::SessionID &s) {
     }
 }
 
-void ClientApplication::onMessage(FIX42::BusinessMessageReject &m, const FIX::SessionID &s) {
+void ClientApplication::onMessage(const FIX42::BusinessMessageReject &m, const FIX::SessionID &s) {
     std::string ref = m.getFieldPtr(FIX::FIELD::RefSeqNum)->getString();
     const FIX::SenderCompID &sendCompId = s.getSenderCompID();
 
@@ -333,7 +330,7 @@ void ClientApplication::onMessage(FIX42::BusinessMessageReject &m, const FIX::Se
     }
 }
 
-String ClientApplication::getValue(FIX::Message &m, int tag) {
+String ClientApplication::getValue(const FIX::Message &m, int tag) {
     try {
         return m.getField(tag);
     }

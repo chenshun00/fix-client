@@ -49,6 +49,12 @@ void FixWidget::showReport(int row, int column) {
     auto qsOrderId = this->getRowOrderId(row);
     String orderId = qsOrderId.toStdString();
     ui->Report->clearContents();
+
+    int rowCount = ui->Report->rowCount();
+    for (int i = 0; i < rowCount; i++) {
+        ui->Report->removeRow(i);
+    }
+
     if (orderId.empty()) {
         return;
     }
@@ -223,11 +229,11 @@ void FixWidget::order() {
     auto pbtn = qobject_cast<QRadioButton *>(ui->Trading_Session->checkedButton());
     QString name = pbtn->objectName();
 
-    if (QString::compare(name, "Trading_Session_0") == 0){
+    if (QString::compare(name, "Trading_Session_0") == 0) {
         order.trading_session_id = "0";
-    }else if (QString::compare(name, "Trading_Session_1") == 0) {
+    } else if (QString::compare(name, "Trading_Session_1") == 0) {
         order.trading_session_id = "1";
-    }else {
+    } else {
         QMessageBox::warning(this, "盘前盘后参数错误", "参数错误");
         return;
     }

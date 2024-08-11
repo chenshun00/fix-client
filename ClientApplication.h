@@ -4,7 +4,7 @@
 #include <map>
 
 #include <quickfix/Application.h>
-#include <quickfix/MessageCracker.h>
+#include <quickfix/fix42/MessageCracker.h>
 #include <quickfix/FixValues.h>
 
 #include <quickfix/fix42/Reject.h>
@@ -17,7 +17,7 @@
 #include "Applicationbridge.h"
 #include "Entrust.h"
 
-class ClientApplication : public ApplicationBridge, public FIX::Application, FIX42::MessageCracker {
+class ClientApplication : public ApplicationBridge, public FIX::Application, public FIX42::MessageCracker {
 public:
     explicit ClientApplication(FIX::SessionSettings *, QObject *parent = nullptr);
 
@@ -38,24 +38,20 @@ public:
 
     void fromApp(const FIX::Message &, const FIX::SessionID &) override;
 
+    void onMessage(const FIX42::ExecutionReport &, const FIX::SessionID &) override;
 
+    void onMessage(const FIX42::Reject &, const FIX::SessionID &) override;
 
-    // MessageCracker interface
-public:
-    void onMessage(FIX42::ExecutionReport &, const FIX::SessionID &) override;
+    void onMessage(const FIX42::BusinessMessageReject &, const FIX::SessionID &) override;
 
-    void onMessage(FIX42::Reject &, const FIX::SessionID &) override;
-
-    void onMessage(FIX42::BusinessMessageReject &, const FIX::SessionID &) override;
-
-    void onMessage(FIX42::OrderCancelReject &, const FIX::SessionID &) override;
+    void onMessage(const FIX42::OrderCancelReject &, const FIX::SessionID &) override;
 
     //发送消息, 根据msgType发送下改撤消息
     bool send(Order &, Entrust &);
 
     static String trim(String &);
 
-    static String getValue(FIX::Message &m, int tag);
+    static String getValue(const FIX::Message &m, int tag);
 
     const Entrust *getEntrust(const String &clOrdId) {
         auto item = this->entrust_map.find(clOrdId);
