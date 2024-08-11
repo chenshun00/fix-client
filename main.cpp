@@ -6,10 +6,8 @@
 
 #include <spdlog/spdlog.h>
 #include "spdlog/cfg/env.h"   // support for loading levels from the environment variable
-#include "spdlog/fmt/ostr.h"  // support for user defined types
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
     spdlog::cfg::load_env_levels();

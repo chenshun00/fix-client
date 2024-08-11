@@ -5,8 +5,7 @@
 
 typedef std::string String;
 
-class Entrust
-{
+class Entrust {
 public:
     String m_order_id;
     String m_cl_ord_id;
@@ -23,11 +22,11 @@ public:
             double order_qty,
             double price) : m_order_id(order_id), m_cl_ord_id(cl_ord_id), m_orig_cl_ord_id(orig_cl_ord_id),
                             m_msg_type(msg_type), m_order_qty(order_qty), m_price(price) {};
+
     ~Entrust() = default;
 };
 
-class Order
-{
+class Order {
 public:
     String begin_string;
     String send_comp_id;
@@ -45,16 +44,16 @@ public:
     String account;
     String security_type;
     char open_close;
-    double cum_qty=0;
-    double leaves_qty=0;
+    double cum_qty = 0;
+    double leaves_qty = 0;
     String ord_status;
 public:
-    Order(/* args */){}
+    Order(/* args */) {}
+
     ~Order() = default;
 };
 
-class ClientExecutionReport
-{
+class ClientExecutionReport {
 public:
     String order_id;
     int msg_seq_num;
@@ -62,8 +61,8 @@ public:
     String side;
     double last_px;
     double last_share;
-    double leaves_qty;
     double cum_qty;
+    double leaves_qty;
     String exec_type;
     String ord_status;
     String text;
@@ -71,7 +70,8 @@ public:
     String orig_cl_ord_id;
     String exec_id;
 public:
-    ClientExecutionReport(/* args */){}
+    ClientExecutionReport(/* args */) {}
+
     ~ClientExecutionReport() = default;
 };
 

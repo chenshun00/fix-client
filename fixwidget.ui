@@ -11,16 +11,25 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Order</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="QIcon::ThemeIcon::EditFind"/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_2">
+   <item row="10" column="0">
+    <widget class="QLabel" name="l_Quantity">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
      <property name="text">
-      <string>Security Type</string>
+      <string>Quantity</string>
      </property>
      <property name="buddy">
-      <cstring>Security_Type</cstring>
+      <cstring>Quantity</cstring>
      </property>
     </widget>
    </item>
@@ -47,43 +56,79 @@
      </item>
     </widget>
    </item>
-   <item row="1" column="3">
-    <widget class="QLabel" name="l_Quantity_2">
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_2">
      <property name="frameShape">
-      <enum>QFrame::Shape::NoFrame</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Shadow::Plain</enum>
+      <enum>QFrame::Shape::StyledPanel</enum>
      </property>
      <property name="text">
-      <string>Side</string>
+      <string>Security Type</string>
      </property>
      <property name="buddy">
-      <cstring>Side</cstring>
+      <cstring>Security_Type</cstring>
      </property>
     </widget>
    </item>
-   <item row="8" column="4">
-    <widget class="QLineEdit" name="Price"/>
+   <item row="2" column="3">
+    <widget class="QLabel" name="l_Quantity_5">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>Exchange</string>
+     </property>
+     <property name="buddy">
+      <cstring>Exchange</cstring>
+     </property>
+    </widget>
    </item>
-   <item row="1" column="4">
-    <widget class="QComboBox" name="Side">
+   <item row="1" column="1" colspan="2">
+    <widget class="QLineEdit" name="Symbol">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <underline>false</underline>
+      </font>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="3">
+    <widget class="QLabel" name="l_Quantity_4">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>Account</string>
+     </property>
+     <property name="buddy">
+      <cstring>Account</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="4">
+    <widget class="QComboBox" name="Position_Effect">
      <property name="currentText">
-      <string>Buy</string>
+      <string>Open</string>
      </property>
      <item>
       <property name="text">
-       <string extracomment="限价单瓦">Buy</string>
+       <string extracomment="限价单瓦">Open</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>Sell</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Short</string>
+       <string>Close</string>
       </property>
      </item>
      <item>
@@ -91,6 +136,34 @@
        <string/>
       </property>
      </item>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <widget class="QRadioButton" name="Trading_Session_1">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777210</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>盘前盘后</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="autoRepeat">
+      <bool>false</bool>
+     </property>
+     <attribute name="buttonGroup">
+      <string notr="true">Trading_Session</string>
+     </attribute>
     </widget>
    </item>
    <item row="9" column="2">
@@ -121,41 +194,59 @@
      </attribute>
     </widget>
    </item>
-   <item row="10" column="1" colspan="2">
-    <widget class="QLineEdit" name="Quantity"/>
-   </item>
-   <item row="8" column="0">
-    <widget class="QLabel" name="label_4">
+   <item row="11" column="3">
+    <widget class="QPushButton" name="Order">
      <property name="text">
-      <string>Ord Type</string>
-     </property>
-     <property name="buddy">
-      <cstring>Ord_Type</cstring>
+      <string>下单</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="3">
-    <widget class="QLabel" name="l_Quantity_5">
+   <item row="1" column="3">
+    <widget class="QLabel" name="l_Quantity_2">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
      <property name="text">
-      <string>Exchange</string>
+      <string>Side</string>
      </property>
      <property name="buddy">
-      <cstring>Exchange</cstring>
+      <cstring>Side</cstring>
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Symbol</string>
+   <item row="8" column="1" colspan="2">
+    <widget class="QComboBox" name="Ord_Type">
+     <property name="currentText">
+      <string>Limit</string>
      </property>
-     <property name="buddy">
-      <cstring>label</cstring>
-     </property>
+     <item>
+      <property name="text">
+       <string extracomment="限价单瓦">Limit</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Market</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string/>
+      </property>
+     </item>
     </widget>
    </item>
    <item row="11" column="0">
     <widget class="QLabel" name="l_Quantity_6">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
      <property name="text">
       <string>SessionId</string>
      </property>
@@ -164,29 +255,177 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="0">
-    <widget class="QLabel" name="l_Quantity">
+   <item row="2" column="4">
+    <widget class="QComboBox" name="Exchange">
+     <property name="currentText">
+      <string>US</string>
+     </property>
+     <item>
+      <property name="text">
+       <string extracomment="限价单瓦">US</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>HK</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>CN</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string/>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
      <property name="text">
-      <string>Quantity</string>
+      <string>Ord Type</string>
      </property>
      <property name="buddy">
-      <cstring>Quantity</cstring>
+      <cstring>Ord_Type</cstring>
      </property>
+    </widget>
+   </item>
+   <item row="8" column="4">
+    <widget class="QLineEdit" name="Price"/>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>Trading Session</string>
+     </property>
+     <property name="buddy">
+      <cstring>Trading_Session_1</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="3">
+    <widget class="QLabel" name="label_3">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>Price</string>
+     </property>
+     <property name="buddy">
+      <cstring>Price</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label">
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Raised</enum>
+     </property>
+     <property name="text">
+      <string>Symbol</string>
+     </property>
+     <property name="buddy">
+      <cstring>label</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1" colspan="2">
+    <widget class="QComboBox" name="Session_ID">
+     <property name="currentText">
+      <string/>
+     </property>
+     <item>
+      <property name="text">
+       <string/>
+      </property>
+     </item>
     </widget>
    </item>
    <item row="10" column="4">
     <widget class="QLineEdit" name="Account"/>
    </item>
-   <item row="16" column="0" colspan="8">
-    <widget class="QTableWidget" name="tableWidget">
+   <item row="10" column="1" colspan="2">
+    <widget class="QLineEdit" name="Quantity"/>
+   </item>
+   <item row="1" column="4">
+    <widget class="QComboBox" name="Side">
+     <property name="currentText">
+      <string>Buy</string>
+     </property>
+     <item>
+      <property name="text">
+       <string extracomment="限价单瓦">Buy</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Sell</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Short</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string/>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="9" column="3">
+    <widget class="QLabel" name="l_Quantity_3">
      <property name="frameShape">
-      <enum>QFrame::Shape::NoFrame</enum>
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>PositionEffect</string>
+     </property>
+     <property name="buddy">
+      <cstring>Position_Effect</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="0" colspan="7">
+    <widget class="QTableWidget" name="OrderTable">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Shadow::Plain</enum>
      </property>
      <property name="lineWidth">
-      <number>0</number>
+      <number>1</number>
      </property>
      <column>
       <property name="text">
@@ -235,180 +474,76 @@
      </column>
     </widget>
    </item>
-   <item row="8" column="1" colspan="2">
-    <widget class="QComboBox" name="Ord_Type">
-     <property name="currentText">
-      <string>Limit</string>
-     </property>
-     <item>
-      <property name="text">
-       <string extracomment="限价单瓦">Limit</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Market</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string/>
-      </property>
-     </item>
-    </widget>
-   </item>
-   <item row="9" column="1">
-    <widget class="QRadioButton" name="Trading_Session_1">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777210</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>盘前盘后</string>
-     </property>
-     <property name="checked">
+   <item row="17" column="0" colspan="6">
+    <widget class="QTableWidget" name="Report">
+     <property name="enabled">
       <bool>true</bool>
      </property>
-     <property name="autoRepeat">
-      <bool>false</bool>
-     </property>
-     <attribute name="buttonGroup">
-      <string notr="true">Trading_Session</string>
-     </attribute>
-    </widget>
-   </item>
-   <item row="11" column="1" colspan="2">
-    <widget class="QComboBox" name="Session_ID">
-     <property name="currentText">
-      <string/>
-     </property>
-     <item>
+     <column>
       <property name="text">
-       <string/>
+       <string>SeqNum</string>
       </property>
-     </item>
-    </widget>
-   </item>
-   <item row="8" column="3">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>Price</string>
-     </property>
-     <property name="buddy">
-      <cstring>Price</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1" colspan="2">
-    <widget class="QLineEdit" name="Symbol">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="font">
-      <font>
-       <underline>false</underline>
-      </font>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="4">
-    <widget class="QComboBox" name="Exchange">
-     <property name="currentText">
-      <string>US</string>
-     </property>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string extracomment="限价单瓦">US</string>
+       <string>ClOrdId</string>
       </property>
-     </item>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string>HK</string>
+       <string>OrigClOrdId</string>
       </property>
-     </item>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string>CN</string>
+       <string>Symbol</string>
       </property>
-     </item>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string/>
+       <string>Side</string>
       </property>
-     </item>
-    </widget>
-   </item>
-   <item row="9" column="0">
-    <widget class="QLabel" name="label_5">
-     <property name="text">
-      <string>Trading Session</string>
-     </property>
-     <property name="buddy">
-      <cstring>Trading_Session_1</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="3">
-    <widget class="QLabel" name="l_Quantity_4">
-     <property name="frameShape">
-      <enum>QFrame::Shape::NoFrame</enum>
-     </property>
-     <property name="text">
-      <string>Account</string>
-     </property>
-     <property name="buddy">
-      <cstring>Account</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="3">
-    <widget class="QLabel" name="l_Quantity_3">
-     <property name="text">
-      <string>PositionEffect</string>
-     </property>
-     <property name="buddy">
-      <cstring>Position_Effect</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="4">
-    <widget class="QComboBox" name="Position_Effect">
-     <property name="currentText">
-      <string>Open</string>
-     </property>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string extracomment="限价单瓦">Open</string>
+       <string>LastPx</string>
       </property>
-     </item>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string>Close</string>
+       <string>LastShares</string>
       </property>
-     </item>
-     <item>
+     </column>
+     <column>
       <property name="text">
-       <string/>
+       <string>ExecType</string>
       </property>
-     </item>
-    </widget>
-   </item>
-   <item row="11" column="3">
-    <widget class="QPushButton" name="Order">
-     <property name="text">
-      <string>下单</string>
-     </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>OrdStatus</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>CumQty</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>LeavesQty</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Text</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>ExecId</string>
+      </property>
+     </column>
     </widget>
    </item>
   </layout>
@@ -426,7 +561,7 @@
   <tabstop>Session_ID</tabstop>
   <tabstop>Position_Effect</tabstop>
   <tabstop>Order</tabstop>
-  <tabstop>tableWidget</tabstop>
+  <tabstop>OrderTable</tabstop>
   <tabstop>Symbol</tabstop>
  </tabstops>
  <resources/>

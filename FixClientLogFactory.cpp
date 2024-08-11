@@ -1,16 +1,16 @@
 #include "FixClientLogFactory.h"
 
-FIX::Log* FixClientLogFacotry::create()
+FIX::Log* FixClientLogFactory::create()
 {
     return new FixClientLog(this->m_path);
 }
 
-FIX::Log* FixClientLogFacotry::create(const FIX::SessionID& sessionId)
+FIX::Log* FixClientLogFactory::create(const FIX::SessionID& sessionId)
 {
     return new FixClientLog(this->m_path, sessionId);
 }
 
-void FixClientLogFacotry::destroy(FIX::Log* log)
+void FixClientLogFactory::destroy(FIX::Log* log)
 {
     delete log;
 }

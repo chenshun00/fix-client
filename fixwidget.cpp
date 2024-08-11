@@ -2,25 +2,85 @@
 #include "ui_fixwidget.h"
 #include <QMessageBox>
 #include <QUuid>
+#include <utility>
 
+#include "cancelDialog.h"
 
-FixWidget::FixWidget(FIX::SessionSettings s, FIX::FileStoreFactory f, FixClientLogFacotry fl, ClientApplication *c,
+FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
+                     std::unique_ptr<FIX::FileStoreFactory> fileStoreFactory,
+                     std::unique_ptr<FixClientLogFactory> fixClientLogFactory,
+                     std::unique_ptr<ClientApplication> client,
                      QWidget *parent)
         : QWidget(parent),
-          sessionSettings(s),
-          file_store_factory(f),
-          file_log(fl),
-          client(c),
-          m_initiator(*client, file_store_factory, sessionSettings, file_log),
+          m_sessionSettings(std::move(sessionSettings)),
+          m_fileStoreFactory(std::move(fileStoreFactory)),
+          m_fixClientLogFactory(std::move(fixClientLogFactory)),
+          m_client(std::move(client)),
+          m_initiator(*m_client, *m_fileStoreFactory, *m_sessionSettings, *m_fixClientLogFactory),
           ui(new Ui::FixWidget) {
     ui->setupUi(this);
-
+    ui->OrderTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    this->setupCustomFeatures(); // 自定义设置
     m_initiator.start();
 
     connect(ui->Order, SIGNAL(clicked()), this, SLOT(order()));
-    connect(client, &ApplicationBridge::mySignal, this, &FixWidget::receiveMySignal);
-    connect(client, &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
+    connect(m_client.get(), &ApplicationBridge::mySignal, this, &FixWidget::receiveMySignal);
+    connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
 }
+
+void FixWidget::setupCustomFeatures() {
+    qDebug() << "Setup custom features started.";
+    ui->OrderTable->installEventFilter(this);
+    connect(ui->OrderTable, &QTableWidget::customContextMenuRequested, this, &FixWidget::showContextMenu);
+    qDebug() << "Setup custom features completed.";
+}
+
+void FixWidget::showContextMenu(const QPoint &pos) {
+    qDebug() << "Setup custom features started.11";
+    QMenu menu(this);
+    QAction *amend = menu.addAction("改单");
+    QAction *cancel = menu.addAction("撤单");
+    connect(amend, &QAction::triggered, this, &FixWidget::handleAmend);
+    connect(cancel, &QAction::triggered, this, &FixWidget::handleCancel);
+    menu.exec(ui->OrderTable->mapToGlobal(pos));
+
+    // 获取鼠标点击位置的行索引
+    QModelIndex index = ui->OrderTable->indexAt(pos);
+    if (index.isValid()) {
+        currentRowIndex = index.row();
+    }
+    menu.exec(ui->OrderTable->mapToGlobal(pos));
+}
+
+QString FixWidget::getRowOrderId(int rowIndex) {
+    auto item = ui->OrderTable->item(rowIndex, 0);
+    if (item) {
+        return item->text();
+    }
+    return "";
+}
+
+void FixWidget::handleAmend() {
+    auto orderId = this->getRowOrderId(this->currentRowIndex);
+
+}
+
+
+void FixWidget::handleCancel() {
+    auto orderId = this->getRowOrderId(this->currentRowIndex);
+    CancelDialog dialog(this); // 将this作为父窗口
+    int result = dialog.exec();
+    if (result == QDialog::Accepted) {
+        // 用户点击了确认按钮
+        // 这里可以获取对话框中的数据并进行进一步处理
+        // 如：QString data = dialog.getData();
+        qDebug() << "hh";
+    } else if (result == QDialog::Rejected) {
+        // 用户点击了取消按钮或其他方式关闭了对话框
+        qDebug() << "ww";
+    }
+}
+
 
 void FixWidget::receiveMySignal(const FIX::SessionID &s) {
     spdlog::info("FixWidget::receiveMySignal, {}", s.toString());
@@ -33,15 +93,18 @@ void FixWidget::receiveMySignal(const FIX::SessionID &s) {
 
 void FixWidget::receiveOrder(const Order &order) {
     int rowPosition = 0;
-    ui->tableWidget->insertRow(rowPosition);
-    ui->tableWidget->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(order.order_id)));
-    ui->tableWidget->setItem(rowPosition, 1, new QTableWidgetItem(QString::fromStdString(order.symbol)));
-    ui->tableWidget->setItem(rowPosition, 2, new QTableWidgetItem(QString(QChar(order.ord_type))));
-    ui->tableWidget->setItem(rowPosition, 3, new QTableWidgetItem(QString::number(order.price)));
-    ui->tableWidget->setItem(rowPosition, 4, new QTableWidgetItem(QString::fromStdString(order.ord_status)));
-    ui->tableWidget->setItem(rowPosition, 5, new QTableWidgetItem(QString(QChar(order.side))));
-    ui->tableWidget->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(order.cum_qty)));
-    ui->tableWidget->setItem(rowPosition, 7, new QTableWidgetItem(QString::number(order.leaves_qty)));
+    ui->OrderTable->insertRow(rowPosition);
+    ui->OrderTable->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(order.order_id)));
+    ui->OrderTable->setItem(rowPosition, 1, new QTableWidgetItem(QString::fromStdString(order.symbol)));
+    ui->OrderTable->setItem(rowPosition, 2, new QTableWidgetItem(QString(QChar(order.ord_type))));
+    ui->OrderTable->setItem(rowPosition, 3, new QTableWidgetItem(QString::number(order.price)));
+    ui->OrderTable->setItem(rowPosition, 4, new QTableWidgetItem(QString::fromStdString(order.ord_status)));
+    ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem(QString(QChar(order.side))));
+    ui->OrderTable->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(order.order_qty)));
+    ui->OrderTable->setItem(rowPosition, 7, new QTableWidgetItem(QString::number(order.cum_qty)));
+    ui->OrderTable->setItem(rowPosition, 8, new QTableWidgetItem(QString::number(order.leaves_qty)));
+
+    //ui->OrderTable->currentItem()
 }
 
 void FixWidget::order() {
@@ -105,7 +168,7 @@ void FixWidget::order() {
     order.in_market = entrust.m_cl_ord_id;
     order.on_load = "";
     order.cum_qty = 0;
-    order.leaves_qty = 0;
+    order.leaves_qty = order.order_qty;
 
     auto pbtn = qobject_cast<QRadioButton *>(ui->Trading_Session->checkedButton());
     QString name = pbtn->objectName();
@@ -117,13 +180,11 @@ void FixWidget::order() {
         QMessageBox::warning(this, "盘前盘后参数错误", "参数错误");
         return;
     }
-    this->client->send(order, entrust);
+    this->m_client->send(order, entrust);
 }
 
 FixWidget::~FixWidget() {
-    qInfo() << "what fuck" << Qt::endl;
     m_initiator.stop();
-    delete client;
     delete ui;
 }
 

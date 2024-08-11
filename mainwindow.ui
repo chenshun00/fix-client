@@ -14,7 +14,7 @@
    <string>FixClient</string>
   </property>
   <property name="windowIcon">
-   <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
+   <iconset theme="QIcon::ThemeIcon::DocumentSend"/>
   </property>
   <property name="statusTip">
    <string>hello world</string>
