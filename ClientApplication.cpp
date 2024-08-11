@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <quickfix/FixValues.h>
+#include <quickfix/fix42/NewOrderSingle.h>
 
 #include <spdlog/spdlog.h>
 
@@ -211,6 +212,13 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
             message.setField(FIX::Account(order.account));
         }
         message.setField(FIX::PositionEffect(order.open_close));
+        
+        FIX42::NewOrderSingle::NoTradingSessions sessions;
+        FIX::TradingSessionID session_id(order.trading_session_id);
+        sessions.set(session_id);
+
+        message.addGroup(sessions);
+
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest) {
         if (order.account.size() > 0) {
