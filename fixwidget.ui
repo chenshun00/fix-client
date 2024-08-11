@@ -422,7 +422,7 @@
       <enum>QFrame::Shape::Box</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Shadow::Plain</enum>
+      <enum>QFrame::Shadow::Sunken</enum>
      </property>
      <property name="lineWidth">
       <number>1</number>
@@ -474,10 +474,13 @@
      </column>
     </widget>
    </item>
-   <item row="17" column="0" colspan="6">
+   <item row="17" column="0" colspan="7">
     <widget class="QTableWidget" name="Report">
      <property name="enabled">
       <bool>true</bool>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
      </property>
      <column>
       <property name="text">
@@ -549,12 +552,12 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>Side</tabstop>
-  <tabstop>Ord_Type</tabstop>
+  <tabstop>Symbol</tabstop>
   <tabstop>Security_Type</tabstop>
-  <tabstop>Exchange</tabstop>
-  <tabstop>Price</tabstop>
   <tabstop>Trading_Session_1</tabstop>
+  <tabstop>Price</tabstop>
+  <tabstop>Ord_Type</tabstop>
+  <tabstop>Exchange</tabstop>
   <tabstop>Trading_Session_0</tabstop>
   <tabstop>Quantity</tabstop>
   <tabstop>Account</tabstop>
@@ -562,7 +565,8 @@
   <tabstop>Position_Effect</tabstop>
   <tabstop>Order</tabstop>
   <tabstop>OrderTable</tabstop>
-  <tabstop>Symbol</tabstop>
+  <tabstop>Side</tabstop>
+  <tabstop>Report</tabstop>
  </tabstops>
  <resources/>
  <connections/>

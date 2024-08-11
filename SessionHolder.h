@@ -5,21 +5,21 @@
 #include <quickfix/Session.h>
 #include <map>
 
-class SessionHolder
-{
+class SessionHolder {
 public:
     static SessionHolder Instance();
 
-    void insert(FIX::SessionID, FIX::Session* );
+    void insert(FIX::SessionID, FIX::Session *);
 
-    bool un_register(FIX::SessionID);
+    bool unRegister(const FIX::SessionID &);
 
 private:
     SessionHolder();
-    typedef std::map<FIX::SessionID, FIX::Session*> SESSION_ID_MAP;
+
+    typedef std::map<FIX::SessionID, FIX::Session *> SESSION_ID_MAP;
     static SESSION_ID_MAP sessionMap;
 };
 
-inline SessionHolder::SessionHolder() {}
+inline SessionHolder::SessionHolder() = default;
 
 #endif // SESSIONHOLDER_H

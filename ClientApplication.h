@@ -17,19 +17,25 @@
 #include "Applicationbridge.h"
 #include "Entrust.h"
 
-class ClientApplication : public ApplicationBridge,public FIX::Application, FIX::MessageCracker
-{
+class ClientApplication : public ApplicationBridge, public FIX::Application, FIX42::MessageCracker {
 public:
-    explicit ClientApplication(FIX::SessionSettings*,QObject *parent = nullptr);
+    explicit ClientApplication(FIX::SessionSettings *, QObject *parent = nullptr);
 
+    ~ClientApplication() override = default;
     // Application interface
 public:
     void onCreate(const FIX::SessionID &) override;
+
     void onLogon(const FIX::SessionID &) override;
+
     void onLogout(const FIX::SessionID &) override;
+
     void toAdmin(FIX::Message &, const FIX::SessionID &) override;
+
     void toApp(FIX::Message &, const FIX::SessionID &) override;
+
     void fromAdmin(const FIX::Message &, const FIX::SessionID &) override;
+
     void fromApp(const FIX::Message &, const FIX::SessionID &) override;
 
 
@@ -37,42 +43,53 @@ public:
     // MessageCracker interface
 public:
     void onMessage(FIX42::ExecutionReport &, const FIX::SessionID &) override;
+
     void onMessage(FIX42::Reject &, const FIX::SessionID &) override;
+
     void onMessage(FIX42::BusinessMessageReject &, const FIX::SessionID &) override;
+
     void onMessage(FIX42::OrderCancelReject &, const FIX::SessionID &) override;
 
     //发送消息, 根据msgType发送下改撤消息
-    bool send(Order&, Entrust&);
-    String trim(String&);
-    String getValue(FIX42::ExecutionReport& m, int tag);
+    bool send(Order &, Entrust &);
 
-    const Entrust* getEntrust(String cl_ord_id) 
-    {
-        auto item = this->entrust_map.find(cl_ord_id);
-        if (item == this->entrust_map.end())
-        {
+    static String trim(String &);
+
+    static String getValue(FIX::Message &m, int tag);
+
+    const Entrust *getEntrust(const String &clOrdId) {
+        auto item = this->entrust_map.find(clOrdId);
+        if (item == this->entrust_map.end()) {
             return nullptr;
         }
         return &(item->second);
     }
 
-    const Order* getOrder(String order_id)
-    {
-        auto item = this->order_map.find(order_id);
-        if (item == this->order_map.end())
-        {
+    Order *getOrder(const String &orderId) {
+        auto item = this->order_map.find(orderId);
+        if (item == this->order_map.end()) {
             return nullptr;
         }
         return &(item->second);
+    }
+
+    void getReportList(String &orderId, std::vector<ClientExecutionReport> &res) {
+        auto item = reportMap.find(orderId);
+        if (item == reportMap.end()) {
+            return;
+        }
+        auto reportList = item->second;
+        res.insert(res.end(), reportList.begin(), reportList.end());
     }
 
 private:
-    typedef std::map<std::string,std::map<std::string, FIX::Message>> MessageMap;
+    typedef std::vector<ClientExecutionReport> ReportList;
+    typedef std::map<std::string, std::map<std::string, FIX::Message>> MessageMap;
     typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
     typedef std::map<String/*orderId*/, Order> OrderMap;
-    typedef std::map<String/*orderId*/, ClientExecutionReport> ExecutionReportMap;
+    typedef std::map<String/*orderId*/, ReportList> ExecutionReportMap;
 
-    FIX::SessionSettings* m_settings;
+    FIX::SessionSettings *m_settings;
 
     MessageMap maps;
     EntrustMap entrust_map;
