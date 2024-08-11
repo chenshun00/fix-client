@@ -19,24 +19,66 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
           m_initiator(*m_client, *m_fileStoreFactory, *m_sessionSettings, *m_fixClientLogFactory),
           ui(new Ui::FixWidget) {
     ui->setupUi(this);
+    //自适应大小
     ui->OrderTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->OrderTable->horizontalHeader()->setStretchLastSection(true);
+    ui->OrderTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    //禁止编辑
+    ui->OrderTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    //自适应大小
+    ui->Report->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->Report->horizontalHeader()->setStretchLastSection(true);
+    ui->Report->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    //禁止编辑
+
     this->setupCustomFeatures(); // 自定义设置
     m_initiator.start();
 
     connect(ui->Order, SIGNAL(clicked()), this, SLOT(order()));
-    connect(m_client.get(), &ApplicationBridge::mySignal, this, &FixWidget::receiveMySignal);
+    connect(m_client.get(), &ApplicationBridge::mySignal, this, &FixWidget::logon);
     connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
 }
 
 void FixWidget::setupCustomFeatures() {
-    qDebug() << "Setup custom features started.";
-    ui->OrderTable->installEventFilter(this);
     connect(ui->OrderTable, &QTableWidget::customContextMenuRequested, this, &FixWidget::showContextMenu);
-    qDebug() << "Setup custom features completed.";
+    connect(ui->OrderTable, &QTableWidget::cellDoubleClicked, this, &FixWidget::showReport);
+}
+
+void FixWidget::showReport(int row, int column) {
+    auto qsOrderId = this->getRowOrderId(row);
+    String orderId = qsOrderId.toStdString();
+    ui->Report->clearContents();
+    if (orderId.empty()) {
+        return;
+    }
+
+    std::vector<ClientExecutionReport> reports;
+    m_client->getReportList(orderId, reports);
+
+    int rowPosition = 0;
+    for (const auto &item : reports) {
+        ui->Report->insertRow(rowPosition);
+
+        ui->Report->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(item.msg_seq_num)));
+        ui->Report->setItem(rowPosition, 1, new QTableWidgetItem(QString::fromStdString(item.cl_ord_id)));
+        ui->Report->setItem(rowPosition, 2, new QTableWidgetItem(QString::fromStdString(item.orig_cl_ord_id)));
+        ui->Report->setItem(rowPosition, 3, new QTableWidgetItem(QString::fromStdString(item.symbol)));
+        ui->Report->setItem(rowPosition, 4, new QTableWidgetItem(QString::fromStdString(item.side)));
+        ui->Report->setItem(rowPosition, 5, new QTableWidgetItem(QString::number(item.last_px)));
+        ui->Report->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(item.last_share)));
+        ui->Report->setItem(rowPosition, 7, new QTableWidgetItem(QString::fromStdString(item.exec_type)));
+        ui->Report->setItem(rowPosition, 8, new QTableWidgetItem(QString::fromStdString(item.ord_status)));
+        ui->Report->setItem(rowPosition, 9, new QTableWidgetItem(QString::number(item.cum_qty)));
+        ui->Report->setItem(rowPosition, 10, new QTableWidgetItem(QString::number(item.leaves_qty)));
+        ui->Report->setItem(rowPosition, 11, new QTableWidgetItem(QString::fromStdString(item.text)));
+        ui->Report->setItem(rowPosition, 12, new QTableWidgetItem(QString::fromStdString(item.exec_id)));
+
+        rowPosition++;
+    }
 }
 
 void FixWidget::showContextMenu(const QPoint &pos) {
-    qDebug() << "Setup custom features started.11";
     QMenu menu(this);
     QAction *amend = menu.addAction("改单");
     QAction *cancel = menu.addAction("撤单");
@@ -82,13 +124,21 @@ void FixWidget::handleCancel() {
 }
 
 
-void FixWidget::receiveMySignal(const FIX::SessionID &s) {
-    spdlog::info("FixWidget::receiveMySignal, {}", s.toString());
+void FixWidget::logon(const FIX::SessionID &s) {
+    spdlog::info("FixWidget::logon, {}", s.toString());
     auto str = s.toString();
     if (ui->Session_ID->findText(QString::fromStdString(str)) >= 0) {
         return;
     }
     ui->Session_ID->addItem(QString::fromStdString(s.toString()));
+}
+
+void FixWidget::logout(const FIX::SessionID &s) {
+    spdlog::info("FixWidget::logout, {}", s.toString());
+    auto str = s.toString();
+    if (ui->Session_ID->findText(QString::fromStdString(str)) >= 0) {
+        ui->Session_ID->removeItem(ui->Session_ID->findText(QString::fromStdString(str)));
+    }
 }
 
 void FixWidget::receiveOrder(const Order &order) {
@@ -189,7 +239,7 @@ FixWidget::~FixWidget() {
 }
 
 String FixWidget::getId() {
-    return QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString();
+    return QUuid::createUuid().toString(QUuid::WithoutBraces).replace("-", "").toStdString();
 }
 
 bool FixWidget::check(const QString &field, const QString &msg) {

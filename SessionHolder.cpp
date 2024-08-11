@@ -14,7 +14,7 @@ void SessionHolder::insert(FIX::SessionID sessionId, FIX::Session* session)
     SessionHolder::sessionMap.insert(std::make_pair(sessionId, session));
 }
 
-bool SessionHolder::un_register(FIX::SessionID sessionId)
+bool SessionHolder::unRegister(const FIX::SessionID& sessionId)
 {
     auto item = SessionHolder::sessionMap.find(sessionId);
     if (item == SessionHolder::sessionMap.end()){

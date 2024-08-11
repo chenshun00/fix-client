@@ -6,11 +6,10 @@
 
 #include <spdlog/spdlog.h>
 
-#include <regex>
-
-
 ClientApplication::ClientApplication(FIX::SessionSettings *s, QObject *parent) : ApplicationBridge(parent),
-                                                                                 FIX::Application(), m_settings(s) {
+                                                                                 FIX::Application(),
+                                                                                 FIX42::MessageCracker(),
+                                                                                 m_settings(s) {
     spdlog::info("ClientApplication instantiate");
 }
 
@@ -31,6 +30,7 @@ void ClientApplication::onLogon(const FIX::SessionID &sessionId) {
 
 void ClientApplication::onLogout(const FIX::SessionID &s) {
     spdlog::info("start ClientApplication::onLogout, sessionId:{}, emit logout signal", s.toString());
+    SessionHolder::Instance().unRegister(s);
     this->logout(s);
     spdlog::info("end ClientApplication::onLogout, sessionId:{}, emit logout signal", s.toString());
 }
@@ -92,92 +92,11 @@ void ClientApplication::toApp(FIX::Message &m, const FIX::SessionID &s) {
 }
 
 void ClientApplication::fromAdmin(const FIX::Message &m, const FIX::SessionID &s) {
-    this->crack(m, s);
+    crack(m, s);
 }
 
 void ClientApplication::fromApp(const FIX::Message &m, const FIX::SessionID &s) {
-    this->crack(m, s);
-}
-
-void ClientApplication::onMessage(FIX42::ExecutionReport &m, const FIX::SessionID &s) {
-    ClientExecutionReport report = ClientExecutionReport();
-
-    FIX::ClOrdID cl_ord_id;
-    m.getField(cl_ord_id);
-    report.cl_ord_id = cl_ord_id.getFixString();
-
-
-    auto entrust = this->getEntrust(report.cl_ord_id);
-    if (!entrust) {
-        return;
-    }
-    auto order = this->getOrder(entrust->m_order_id);
-    if (!order) {
-        return;
-    }
-    FIX::MsgSeqNum num;
-    m.getHeader().getField(num);
-    report.order_id = order->order_id;
-    report.msg_seq_num = num.getValue();
-    report.symbol = order->symbol;
-    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
-    report.cl_ord_id = entrust->m_cl_ord_id;
-    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
-    report.exec_id = this->getValue(m, FIX::FIELD::ExecID);
-    report.text = this->getValue(m, FIX::FIELD::Text);
-    report.exec_type = this->getValue(m, FIX::FIELD::ExecType);
-    report.ord_status = this->getValue(m, FIX::FIELD::OrdStatus);
-    report.last_px = std::stod(this->getValue(m, FIX::FIELD::LastPx));
-    report.last_share = std::stod(this->getValue(m, FIX::FIELD::LastShares));
-    report.cum_qty = std::stod(this->getValue(m, FIX::FIELD::CumQty));
-    report.leaves_qty = std::stod(this->getValue(m, FIX::FIELD::LeavesQty));
-
-    this->reportMap.insert(std::make_pair(report.order_id, report));
-}
-
-
-String ClientApplication::getValue(FIX42::ExecutionReport &m, int tag) {
-    try {
-        return m.getField(tag);
-    }
-    catch (FIX::FieldNotFound &f) {
-        return "0";
-    }
-}
-
-void ClientApplication::onMessage(FIX42::OrderCancelReject &m, const FIX::SessionID &s) {
-
-}
-
-void ClientApplication::onMessage(FIX42::Reject &m, const FIX::SessionID &s) {
-    std::string ref = m.getFieldPtr(FIX::FIELD::RefSeqNum)->getString();
-    FIX::SenderCompID sendCompId = s.getSenderCompID();
-
-    auto item = this->maps.find(sendCompId.getString());
-    if (item == this->maps.end()) {
-        qInfo() << "clordid not exist and corresponding message is not exist";
-        return;
-    }
-    auto tag_message = item->second;
-
-    auto message_pair = tag_message.find(ref);
-    if (message_pair == tag_message.end()) {
-        qInfo() << "2, clordid not exist and corresponding message is not exist";
-        return;
-    }
-
-    auto message = message_pair->second;
-
-    FIX::ClOrdID clOrdId;
-    message.getField(clOrdId);
-
-    auto id = clOrdId.getString();
-
-
-}
-
-void ClientApplication::onMessage(FIX42::BusinessMessageReject &m, const FIX::SessionID &s) {
-
+    crack(m, s);
 }
 
 bool ClientApplication::send(Order &order, Entrust &entrust) {
@@ -201,7 +120,7 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         }
         message.setField(FIX::OrderQty(entrust.m_order_qty));
         message.setField(FIX::SecurityType(order.security_type));
-        message.setField(FIX::Symbol(this->trim(order.symbol)));
+        message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
         message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
         message.setField(FIX::Side(order.side));
         if (order.exchange.length() > 0) {
@@ -213,12 +132,12 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         message.setField(FIX::PositionEffect(order.open_close));
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest) {
-        if (order.account.size() > 0) {
+        if (!order.account.empty()) {
             message.setField(FIX::Account(order.account));
         }
         message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
         message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
-        message.setField(FIX::Symbol(this->trim(order.symbol)));
+        message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
         message.setField(FIX::Side(order.side));
         message.setField(FIX::OrderQty(entrust.m_order_qty));
         message.setField(FIX::OrdType(order.ord_type));
@@ -227,12 +146,12 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         }
     }
     if (msg_type == FIX::MsgType_OrderCancelRequest) {
-        if (order.account.size() > 0) {
+        if (!order.account.empty()) {
             message.setField(FIX::Account(order.account));
         }
         message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
         message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
-        message.setField(FIX::Symbol(this->trim(order.symbol)));
+        message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
         message.setField(FIX::Side(order.side));
         message.setField(FIX::OrderQty(entrust.m_order_qty));
     }
@@ -245,6 +164,174 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         this->emitPlaceOrder(order);
     }
     return res;
+}
+
+void ClientApplication::onMessage(FIX42::ExecutionReport &m, const FIX::SessionID &s) {
+    ClientExecutionReport report = ClientExecutionReport();
+
+    FIX::ClOrdID cl_ord_id;
+    m.getField(cl_ord_id);
+    report.cl_ord_id = cl_ord_id.getFixString();
+
+
+    auto entrust = this->getEntrust(report.cl_ord_id);
+    if (!entrust) {
+        return;
+    }
+    auto order = this->getOrder(entrust->m_order_id);
+    if (!order) {
+        return;
+    }
+    report.order_id = order->order_id;
+    report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
+    report.symbol = order->symbol;
+    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
+    report.cl_ord_id = entrust->m_cl_ord_id;
+    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
+    report.exec_id = ClientApplication::getValue(m, FIX::FIELD::ExecID);
+    report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
+    report.exec_type = ClientApplication::getValue(m, FIX::FIELD::ExecType);
+    report.ord_status = ClientApplication::getValue(m, FIX::FIELD::OrdStatus);
+    report.last_px = std::stod(ClientApplication::getValue(m, FIX::FIELD::LastPx));
+    report.last_share = std::stod(ClientApplication::getValue(m, FIX::FIELD::LastShares));
+    report.cum_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::CumQty));
+    report.leaves_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::LeavesQty));
+
+    auto item = this->reportMap.find(report.order_id);
+    if (item == this->reportMap.end()) {
+        ReportList list;
+        list.push_back(report);
+        this->reportMap.insert(std::make_pair(report.order_id, list));
+    } else {
+        item->second.push_back(report);
+    }
+}
+
+void ClientApplication::onMessage(FIX42::OrderCancelReject &m, const FIX::SessionID &s) {
+    auto report = ClientExecutionReport();
+    //改单和撤单拒绝
+    report.cl_ord_id = ClientApplication::getValue(m, FIX::FIELD::ClOrdID);
+
+    auto entrust = this->getEntrust(report.cl_ord_id);
+    auto order = this->getOrder(entrust->m_order_id);
+
+    report.order_id = order->order_id;
+    report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
+    report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
+
+    report.symbol = order->symbol;
+    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
+    report.cl_ord_id = entrust->m_cl_ord_id;
+    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
+
+    auto item = this->reportMap.find(report.order_id);
+    if (item == this->reportMap.end()) {
+        ReportList list;
+        list.push_back(report);
+        this->reportMap.insert(std::make_pair(report.order_id, list));
+    } else {
+        item->second.push_back(report);
+    }
+}
+
+void ClientApplication::onMessage(FIX42::Reject &m, const FIX::SessionID &s) {
+    std::string ref = m.getFieldPtr(FIX::FIELD::RefSeqNum)->getString();
+    const FIX::SenderCompID &sendCompId = s.getSenderCompID();
+
+    auto item = this->maps.find(sendCompId.getString());
+    if (item == this->maps.end()) {
+        spdlog::info("1:clordid not exist and corresponding message is not exist");
+        return;
+    }
+    auto tag_message = item->second;
+
+    auto message_pair = tag_message.find(ref);
+    if (message_pair == tag_message.end()) {
+        spdlog::info("2:clordid not exist and corresponding message is not exist");
+        return;
+    }
+
+    auto message = message_pair->second;
+
+    String clOrdId = ClientApplication::getValue(message, FIX::FIELD::ClOrdID);
+    auto entrust = this->getEntrust(clOrdId);
+    auto order = this->getOrder(entrust->m_order_id);
+
+    order->update = FORBID_UPDATE;
+
+    auto report = ClientExecutionReport();
+    //report.order_id =
+    report.order_id = entrust->m_order_id;
+    report.cl_ord_id = entrust->m_cl_ord_id;
+    report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
+    report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
+    report.symbol = order->symbol;
+    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
+    report.ord_status = "8";
+
+    auto reportItem = this->reportMap.find(report.order_id);
+    if (reportItem == this->reportMap.end()) {
+        ReportList list;
+        list.push_back(report);
+        this->reportMap.insert(std::make_pair(report.order_id, list));
+    } else {
+        reportItem->second.push_back(report);
+    }
+}
+
+void ClientApplication::onMessage(FIX42::BusinessMessageReject &m, const FIX::SessionID &s) {
+    std::string ref = m.getFieldPtr(FIX::FIELD::RefSeqNum)->getString();
+    const FIX::SenderCompID &sendCompId = s.getSenderCompID();
+
+    auto item = this->maps.find(sendCompId.getString());
+    if (item == this->maps.end()) {
+        spdlog::info("BusinessMessageReject, 1:clordid not exist and corresponding message is not exist");
+        return;
+    }
+    auto tag_message = item->second;
+
+    auto message_pair = tag_message.find(ref);
+    if (message_pair == tag_message.end()) {
+        spdlog::info("BusinessMessageReject, 2:clordid not exist and corresponding message is not exist");
+        return;
+    }
+
+    auto message = message_pair->second;
+
+    String clOrdId = ClientApplication::getValue(message, FIX::FIELD::ClOrdID);
+    auto entrust = this->getEntrust(clOrdId);
+    auto order = this->getOrder(entrust->m_order_id);
+    if (entrust->m_msg_type == FIX::MsgType_NewOrderSingle) {
+        order->update = FORBID_UPDATE;
+    }
+
+    auto report = ClientExecutionReport();
+    //report.order_id =
+    report.order_id = entrust->m_order_id;
+    report.cl_ord_id = entrust->m_cl_ord_id;
+    report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
+    report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
+    report.symbol = order->symbol;
+    report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
+    report.ord_status = "8";
+
+    auto reportItem = this->reportMap.find(report.order_id);
+    if (reportItem == this->reportMap.end()) {
+        ReportList list;
+        list.push_back(report);
+        this->reportMap.insert(std::make_pair(report.order_id, list));
+    } else {
+        reportItem->second.push_back(report);
+    }
+}
+
+String ClientApplication::getValue(FIX::Message &m, int tag) {
+    try {
+        return m.getField(tag);
+    }
+    catch (FIX::FieldNotFound &f) {
+        return "0";
+    }
 }
 
 String ClientApplication::trim(String &value) {

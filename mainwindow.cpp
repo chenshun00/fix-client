@@ -13,10 +13,10 @@
 #include "FixClientLogFactory.h"
 
 MainWindow::MainWindow(QWidget *parent)
-        : QMainWindow(parent), ui(new Ui::MainWindow) {
-    this->setWindowTitle("测试用的哦");
+        : QMainWindow(parent), ui(new Ui::MainWindow), running(false) {
     ui->setupUi(this);
     connect(ui->LoadFile, SIGNAL(clicked()), this, SLOT(print()));
+    connect(ui->actionLoadFile, SIGNAL(triggered()), this, SLOT(print()));
 }
 
 MainWindow::~MainWindow() {
@@ -24,6 +24,10 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::print() {
+    if (this->running) {
+        QMessageBox::warning(this, "ERROR", "文件已加载!");
+        return;
+    }
     QFileDialog dialog;
     dialog.setWindowTitle("加载文件");
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -33,6 +37,7 @@ void MainWindow::print() {
         auto name = file.toStdString();
 
         try {
+            this->running = true;
             auto settings = std::make_unique<FIX::SessionSettings>(name);
 
             std::set<FIX::SessionID> session_ids = settings->getSessions();
@@ -51,15 +56,13 @@ void MainWindow::print() {
             );
 
             this->hide();
-            fix->show();
-
+            fix->showFullScreen();
         } catch (FIX::ConfigError &e) {
-            //deleting null pointer has no effect
-            auto detail = e.detail;
-            QMessageBox::warning(this, "ERROR", QString::fromStdString(detail));
+            QMessageBox::warning(this, "ERROR", QString::fromStdString(e.detail));
+            this->running = false;
         } catch (...) {
-            //deleting null pointer has no effect
             QMessageBox::warning(this, "ERROR", "文件错误");
+            this->running = false;
         }
     }
 }

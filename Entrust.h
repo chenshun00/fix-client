@@ -3,6 +3,8 @@
 
 #include <string>
 
+const int FORBID_UPDATE = 0;
+
 typedef std::string String;
 
 class Entrust {
@@ -28,6 +30,7 @@ public:
 
 class Order {
 public:
+    int update{0};
     String begin_string;
     String send_comp_id;
     String target_comp_id;
@@ -56,13 +59,13 @@ public:
 class ClientExecutionReport {
 public:
     String order_id;
-    int msg_seq_num;
+    String msg_seq_num;
     String symbol;
     String side;
-    double last_px;
-    double last_share;
-    double cum_qty;
-    double leaves_qty;
+    double last_px{};
+    double last_share{};
+    double cum_qty{};
+    double leaves_qty{};
     String exec_type;
     String ord_status;
     String text;
@@ -70,7 +73,7 @@ public:
     String orig_cl_ord_id;
     String exec_id;
 public:
-    ClientExecutionReport(/* args */) {}
+    ClientExecutionReport(/* args */) = default;
 
     ~ClientExecutionReport() = default;
 };

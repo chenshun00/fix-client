@@ -37,9 +37,11 @@ public:
 public slots:
 
     void order();
-    void receiveMySignal(const FIX::SessionID &); // 接收信号的槽
+    void logon(const FIX::SessionID &); // 接收信号的槽
+    void logout(const FIX::SessionID &); // 接收信号的槽
     void receiveOrder(const Order &); // 接收信号的槽
     void showContextMenu(const QPoint &);
+    void showReport(int row, int column);
 
 private slots:
     void setupCustomFeatures(); // 自定义设置
