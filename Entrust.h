@@ -2,6 +2,7 @@
 #define ENTRUST_H
 
 #include <string>
+#include <utility>
 
 const int FORBID_UPDATE = 0;
 
@@ -22,8 +23,9 @@ public:
             String orig_cl_ord_id,
             String msg_type,
             double order_qty,
-            double price) : m_order_id(order_id), m_cl_ord_id(cl_ord_id), m_orig_cl_ord_id(orig_cl_ord_id),
-                            m_msg_type(msg_type), m_order_qty(order_qty), m_price(price) {};
+            double price) : m_order_id(std::move(order_id)), m_cl_ord_id(std::move(cl_ord_id)),
+                            m_orig_cl_ord_id(std::move(orig_cl_ord_id)),
+                            m_msg_type(std::move(msg_type)), m_order_qty(order_qty), m_price(price) {};
 
     ~Entrust() = default;
 };

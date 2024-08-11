@@ -26,7 +26,7 @@ void ClientApplication::onLogon(const FIX::SessionID &sessionId) {
     }
     SessionHolder::Instance().insert(sessionId, session);
     spdlog::info("emitSignal, sessionId:{}", sessionId.toString());
-    this->emitMySignal(sessionId);
+    this->emitLogon(sessionId);
 }
 
 void ClientApplication::onLogout(const FIX::SessionID &s) {

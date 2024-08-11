@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QUuid>
 #include <utility>
+#include <QMenu>
 
 #include "cancelDialog.h"
 
@@ -36,7 +37,7 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
     m_initiator.start();
 
     connect(ui->Order, SIGNAL(clicked()), this, SLOT(order()));
-    connect(m_client.get(), &ApplicationBridge::mySignal, this, &FixWidget::logon);
+    connect(m_client.get(), &ApplicationBridge::logon, this, &FixWidget::logon);
     connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
 }
 

@@ -14,7 +14,6 @@
 #include "FixClientLogFactory.h"
 
 #include <QWidget>
-#include "OrderTableWidget.h"
 
 #include "memory"
 

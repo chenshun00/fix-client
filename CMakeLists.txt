@@ -42,8 +42,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ClientApplication.cpp
         Entrust.h
         fixwidget.h fixwidget.cpp fixwidget.ui
-        OrderTableWidget.h OrderTableWidget.cpp
-        Context.h
         Applicationbridge.h Applicationbridge.cpp
         FixClientLogFactory.h FixClientLogFactory.cpp
         amenddialog.h amenddialog.cpp amenddialog.ui
