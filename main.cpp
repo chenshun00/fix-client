@@ -4,9 +4,15 @@
 #include <QLocale>
 #include <QTranslator>
 
-int main(int argc, char *argv[])
-{
+#include <spdlog/spdlog.h>
+#include "spdlog/cfg/env.h"   // support for loading levels from the environment variable
+
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+
+    spdlog::cfg::load_env_levels();
+
+    spdlog::info("start application");
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();

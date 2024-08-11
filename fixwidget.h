@@ -6,45 +6,62 @@
 #include "quickfix/FileStore.h"
 #include "quickfix/FileLog.h"
 
+#include "spdlog/logger.h"
+
 #include "map"
 
 #include "ClientApplication.h"
+#include "FixClientLogFactory.h"
 
 #include <QWidget>
+#include "OrderTableWidget.h"
+
+#include "memory"
 
 namespace Ui {
-class FixWidget;
+    class FixWidget;
 }
 
-class FixWidget : public QWidget
-{
-    Q_OBJECT
+class FixWidget : public QWidget {
+Q_OBJECT
 
 public:
-    explicit FixWidget(FIX::SessionSettings,FIX::FileStoreFactory,FIX::FileLogFactory,ClientApplication* c,QWidget *parent = nullptr);
-    ~FixWidget();
+    explicit FixWidget(std::unique_ptr<FIX::SessionSettings>,
+                       std::unique_ptr<FIX::FileStoreFactory>,
+                       std::unique_ptr<FixClientLogFactory>,
+                       std::unique_ptr<ClientApplication>,
+                       QWidget *parent = nullptr);
+
+    ~FixWidget() override;
 
 public slots:
+
     void order();
     void receiveMySignal(const FIX::SessionID &); // 接收信号的槽
+    void receiveOrder(const Order &); // 接收信号的槽
+    void showContextMenu(const QPoint &);
+
+private slots:
+    void setupCustomFeatures(); // 自定义设置
 
 private:
 
-    typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
-    typedef std::map<String/*orderId*/, Order> OrderMap;
-
-    FIX::SessionSettings  sessionSettings;
-    FIX::FileStoreFactory file_store_factory;
-    FIX::FileLogFactory file_log;
-    ClientApplication* client;
+    std::unique_ptr<FIX::SessionSettings> m_sessionSettings;
+    std::unique_ptr<FIX::FileStoreFactory> m_fileStoreFactory;
+    std::unique_ptr<FixClientLogFactory> m_fixClientLogFactory;
+    std::unique_ptr<ClientApplication> m_client;
     FIX::ThreadedSocketInitiator m_initiator;
     Ui::FixWidget *ui;
 
-    EntrustMap entrust_map;
-    OrderMap order_map;
+    static String getId();
 
-    String getId();
-    bool check(const QString& ,const QString&);
+    bool check(const QString &, const QString &);
+
+    int currentRowIndex = -1;
+    void handleAmend();
+    void handleCancel();
+
+    QString getRowOrderId(int rowIndex);
 };
 
 #endif // FIXWIDGET_H

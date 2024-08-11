@@ -73,3 +73,7 @@ CMakeLists.txt.user*
 *.exe
 
 build
+.vs
+CMakePresets.json
+CMakeUserPresets.json
+out

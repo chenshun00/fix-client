@@ -1,15 +1,18 @@
 #ifndef CLIENTAPPLICATION_H
 #define CLIENTAPPLICATION_H
 
+#include <map>
+
 #include <quickfix/Application.h>
 #include <quickfix/MessageCracker.h>
 #include <quickfix/FixValues.h>
-
 
 #include <quickfix/fix42/Reject.h>
 #include <quickfix/fix42/ExecutionReport.h>
 #include <quickfix/fix42/BusinessMessageReject.h>
 #include <quickfix/fix42/OrderCancelReject.h>
+
+#include <quickfix/SessionSettings.h>
 
 #include "Applicationbridge.h"
 #include "Entrust.h"
@@ -17,7 +20,7 @@
 class ClientApplication : public ApplicationBridge,public FIX::Application, FIX::MessageCracker
 {
 public:
-    explicit ClientApplication(QObject *parent = nullptr);
+    explicit ClientApplication(FIX::SessionSettings*,QObject *parent = nullptr);
 
     // Application interface
 public:
@@ -41,10 +44,40 @@ public:
     //发送消息, 根据msgType发送下改撤消息
     bool send(Order&, Entrust&);
     String trim(String&);
+    String getValue(FIX42::ExecutionReport& m, int tag);
+
+    const Entrust* getEntrust(String cl_ord_id) 
+    {
+        auto item = this->entrust_map.find(cl_ord_id);
+        if (item == this->entrust_map.end())
+        {
+            return nullptr;
+        }
+        return &(item->second);
+    }
+
+    const Order* getOrder(String order_id)
+    {
+        auto item = this->order_map.find(order_id);
+        if (item == this->order_map.end())
+        {
+            return nullptr;
+        }
+        return &(item->second);
+    }
 
 private:
     typedef std::map<std::string,std::map<std::string, FIX::Message>> MessageMap;
+    typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
+    typedef std::map<String/*orderId*/, Order> OrderMap;
+    typedef std::map<String/*orderId*/, ClientExecutionReport> ExecutionReportMap;
+
+    FIX::SessionSettings* m_settings;
+
     MessageMap maps;
+    EntrustMap entrust_map;
+    OrderMap order_map;
+    ExecutionReportMap reportMap;
 };
 
 

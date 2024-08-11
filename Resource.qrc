@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>farmer-8920644_1280.webp</file>
+    </qresource>
+</RCC>
