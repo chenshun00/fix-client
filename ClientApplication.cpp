@@ -7,7 +7,7 @@
 
 #include <spdlog/spdlog.h>
 
-ClientApplication::ClientApplication(FIX::SessionSettings *s, QObject *parent) : ApplicationBridge(parent),
+ClientApplication::ClientApplication(const FIX::SessionSettings& s, QObject *parent) : ApplicationBridge(parent),
                                                                                  FIX::Application(),
                                                                                  FIX42::MessageCracker(),
                                                                                  m_settings(s) {

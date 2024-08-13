@@ -46,7 +46,7 @@ void MainWindow::print() {
             }
             auto fileStoreFactory = std::make_unique<FIX::FileStoreFactory>(*settings);
             auto fixClientLogFactory = std::make_unique<FixClientLogFactory>(*settings);
-            auto client = std::make_unique<ClientApplication>(settings.get());
+            auto client = std::make_unique<ClientApplication>(*settings);
 
             auto fix = new FixWidget(
                     std::move(settings),

@@ -19,7 +19,7 @@
 
 class ClientApplication : public ApplicationBridge, public FIX::Application, public FIX42::MessageCracker {
 public:
-    explicit ClientApplication(FIX::SessionSettings *, QObject *parent = nullptr);
+    explicit ClientApplication(const FIX::SessionSettings &, QObject *parent = nullptr);
 
     ~ClientApplication() override = default;
     // Application interface
@@ -78,14 +78,15 @@ public:
         res.insert(res.end(), reportList.begin(), reportList.end());
     }
 
+protected:
+    FIX::SessionSettings m_settings;
+
 private:
     typedef std::vector<ClientExecutionReport> ReportList;
     typedef std::map<std::string, std::map<std::string, FIX::Message>> MessageMap;
     typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;
     typedef std::map<String/*orderId*/, Order> OrderMap;
     typedef std::map<String/*orderId*/, ReportList> ExecutionReportMap;
-
-    FIX::SessionSettings *m_settings;
 
     MessageMap maps;
     EntrustMap entrust_map;

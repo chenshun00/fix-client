@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "atomic"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,7 +26,7 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    bool running = false;
+    std::atomic<bool> running = false;
 };
 
 #endif // MAINWINDOW_H
