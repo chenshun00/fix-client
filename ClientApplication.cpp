@@ -2,15 +2,16 @@
 #include "SessionHolder.h"
 
 #include <QCoreApplication>
+#include <utility>
 #include <quickfix/FixValues.h>
 #include <quickfix/fix42/NewOrderSingle.h>
 
 #include <spdlog/spdlog.h>
 
-ClientApplication::ClientApplication(const FIX::SessionSettings& s, QObject *parent) : ApplicationBridge(parent),
-                                                                                 FIX::Application(),
-                                                                                 FIX42::MessageCracker(),
-                                                                                 m_settings(s) {
+ClientApplication::ClientApplication(FIX::SessionSettings s, QObject *parent) : ApplicationBridge(parent),
+                                                                                FIX::Application(),
+                                                                                FIX42::MessageCracker(),
+                                                                                m_settings(std::move(s)) {
     spdlog::info("ClientApplication instantiate");
 }
 
@@ -38,10 +39,10 @@ void ClientApplication::onLogout(const FIX::SessionID &s) {
 
 void ClientApplication::toAdmin(FIX::Message &m, const FIX::SessionID &s) {
 
-    spdlog::info("size = {}", this->m_settings->size());
+    spdlog::info("size = {}", this->m_settings.size());
     if (m.getHeader().isSetField(FIX::FIELD::MsgType) &&
-        m.getHeader().getField(FIX::FIELD::MsgType) == FIX::MsgType_Logon && this->m_settings->has(s)) {
-        auto dataDic = this->m_settings->get(s);
+        m.getHeader().getField(FIX::FIELD::MsgType) == FIX::MsgType_Logon && this->m_settings.has(s)) {
+        auto dataDic = this->m_settings.get(s);
         if (dataDic.has("RawData")) {
             String rawData = dataDic.getString("RawData");
             m.setField(FIX::RawData(rawData));
@@ -104,7 +105,6 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
 
     String msg_type = entrust.m_msg_type;
 
-
     FIX::Message message;
     message.getHeader().setField(FIX::BeginString(order.begin_string));
     message.getHeader().setField(FIX::SenderCompID(order.send_comp_id));
@@ -166,6 +166,7 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
 
     bool res = FIX::Session::sendToTarget(message);
     if (res) {
+        order.update = FORBID_UPDATE;
         this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
         this->order_map.insert(std::make_pair(order.order_id, order));
 
@@ -202,6 +203,21 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
     report.cum_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::CumQty));
     report.leaves_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::LeavesQty));
 
+    //订单进入终止状态
+    if (ClientApplication::isFinalState(report.exec_type[0])) {
+        order->update = FORBID_UPDATE;
+    } else {
+        order->update = CAN_UPDATE;
+    }
+    if (FIX::ExecType_NEW == report.exec_type[0]) {
+        order->in_market = order->on_load;
+        order->on_load = "";
+    }
+    //改单确认
+    if (FIX::ExecType_REPLACED == report.exec_type[0]) {
+        order->in_market = order->on_load;
+        order->on_load = "";
+    }
     auto item = this->reportMap.find(report.order_id);
     if (item == this->reportMap.end()) {
         ReportList list;
@@ -219,6 +235,9 @@ void ClientApplication::onMessage(const FIX42::OrderCancelReject &m, const FIX::
 
     auto entrust = this->getEntrust(report.cl_ord_id);
     auto order = this->getOrder(entrust->m_order_id);
+
+    order->update=CAN_UPDATE;
+    order->on_load = "";
 
     report.order_id = order->order_id;
     report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
@@ -308,6 +327,8 @@ void ClientApplication::onMessage(const FIX42::BusinessMessageReject &m, const F
     auto order = this->getOrder(entrust->m_order_id);
     if (entrust->m_msg_type == FIX::MsgType_NewOrderSingle) {
         order->update = FORBID_UPDATE;
+    } else {
+        order->update = CAN_UPDATE;
     }
 
     auto report = ClientExecutionReport();

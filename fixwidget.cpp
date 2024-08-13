@@ -5,7 +5,7 @@
 #include <utility>
 #include <QMenu>
 
-#include "cancelDialog.h"
+#include "CancelDialog.h"
 
 FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
                      std::unique_ptr<FIX::FileStoreFactory> fileStoreFactory,
@@ -38,6 +38,7 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
 
     connect(ui->Order, SIGNAL(clicked()), this, SLOT(order()));
     connect(m_client.get(), &ApplicationBridge::logon, this, &FixWidget::logon);
+    connect(m_client.get(), &ApplicationBridge::logout, this, &FixWidget::logout);
     connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
 }
 
@@ -116,17 +117,33 @@ void FixWidget::handleAmend() {
 
 
 void FixWidget::handleCancel() {
-    auto orderId = this->getRowOrderId(this->currentRowIndex);
+    auto orderId = this->getRowOrderId(this->currentRowIndex).toStdString();
+
     CancelDialog dialog(this); // 将this作为父窗口
     int result = dialog.exec();
     if (result == QDialog::Accepted) {
-        // 用户点击了确认按钮
-        // 这里可以获取对话框中的数据并进行进一步处理
-        // 如：QString data = dialog.getData();
-        qDebug() << "hh";
+        //点击了确认按钮
+        auto order = this->m_client->getOrder(orderId);
+        if (!order) {
+            spdlog::info("orderId: {}", orderId);
+            QMessageBox::warning(this, "Note", "订单不存在");
+            return;
+        }
+        if (!order->update) {
+            QMessageBox::warning(this, "Note", "当前状态不能撤单");
+            return;
+        }
+
+        auto inMarket = order->in_market;
+        Entrust entrust(orderId, FixWidget::getId(),
+                        inMarket, FIX::MsgType_OrderCancelRequest,
+                        order->order_qty - order->cum_qty, order->price);
+        auto res = this->m_client->send(*order, entrust);
+        if (!res) {
+            QMessageBox::warning(this, "ERROR", "撤单失败");
+        }
     } else if (result == QDialog::Rejected) {
-        // 用户点击了取消按钮或其他方式关闭了对话框
-        qDebug() << "ww";
+        // 点击了取消按钮或其他方式关闭了对话框
     }
 }
 
@@ -144,6 +161,7 @@ void FixWidget::logout(const FIX::SessionID &s) {
     spdlog::info("FixWidget::logout, {}", s.toString());
     auto str = s.toString();
     if (ui->Session_ID->findText(QString::fromStdString(str)) >= 0) {
+        spdlog::info("FixWidget::logout success, {}", s.toString());
         ui->Session_ID->removeItem(ui->Session_ID->findText(QString::fromStdString(str)));
     }
 }
@@ -222,8 +240,7 @@ void FixWidget::order() {
     order.order_id = FixWidget::getId();
 
     Entrust entrust(order.order_id, order.order_id, "", "D", order.order_qty, order.price);
-    order.in_market = entrust.m_cl_ord_id;
-    order.on_load = "";
+    order.on_load = entrust.m_cl_ord_id;
     order.cum_qty = 0;
     order.leaves_qty = order.order_qty;
 

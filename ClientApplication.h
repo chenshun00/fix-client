@@ -19,7 +19,7 @@
 
 class ClientApplication : public ApplicationBridge, public FIX::Application, public FIX42::MessageCracker {
 public:
-    explicit ClientApplication(const FIX::SessionSettings &, QObject *parent = nullptr);
+    explicit ClientApplication(FIX::SessionSettings, QObject *parent = nullptr);
 
     ~ClientApplication() override = default;
     // Application interface
@@ -82,6 +82,14 @@ protected:
     FIX::SessionSettings m_settings;
 
 private:
+
+    static bool isFinalState(char execType) {
+        return FIX::ExecType_REJECTED == execType
+               || FIX::ExecType_CANCELED == execType
+               || FIX::ExecType_EXPIRED == execType
+               || FIX::ExecType_DONE_FOR_DAY == execType;
+    }
+
     typedef std::vector<ClientExecutionReport> ReportList;
     typedef std::map<std::string, std::map<std::string, FIX::Message>> MessageMap;
     typedef std::map<String/*clOrdId*/, Entrust> EntrustMap;

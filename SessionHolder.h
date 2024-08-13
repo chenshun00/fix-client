@@ -5,6 +5,8 @@
 #include <quickfix/Session.h>
 #include <map>
 
+#include <spdlog/spdlog.h>
+
 class SessionHolder {
 public:
     static SessionHolder Instance();

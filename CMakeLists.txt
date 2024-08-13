@@ -45,7 +45,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Applicationbridge.h Applicationbridge.cpp
         FixClientLogFactory.h FixClientLogFactory.cpp
         amenddialog.h amenddialog.cpp amenddialog.ui
-        canceldialog.h canceldialog.cpp canceldialog.ui
+        CancelDialog.h CancelDialog.cpp CancelDialog.ui
         Resource.qrc
     )
 # Define target properties for Android with Qt 6 as:

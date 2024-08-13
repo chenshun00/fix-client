@@ -5,6 +5,7 @@
 #include <utility>
 
 const int FORBID_UPDATE = 0;
+const int CAN_UPDATE = 1;
 
 typedef std::string String;
 
