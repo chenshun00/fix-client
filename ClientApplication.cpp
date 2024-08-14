@@ -103,26 +103,27 @@ void ClientApplication::fromApp(const FIX::Message &m, const FIX::SessionID &s) 
 
 bool ClientApplication::send(Order &order, Entrust &entrust) {
 
-    String msg_type = entrust.m_msg_type;
+    String msg_type = entrust.m_msgType;
 
     FIX::Message message;
-    message.getHeader().setField(FIX::BeginString(order.begin_string));
-    message.getHeader().setField(FIX::SenderCompID(order.send_comp_id));
-    message.getHeader().setField(FIX::TargetCompID(order.target_comp_id));
+    message.getHeader().setField(FIX::BeginString(order.beginString));
+    message.getHeader().setField(FIX::SenderCompID(order.sendCompId));
+    message.getHeader().setField(FIX::TargetCompID(order.targetCompId));
     message.getHeader().setField(FIX::MsgType(msg_type));
 
     message.setField(FIX::TransactTime(FIX::UtcTimeStamp::nowUtc(), 6));
 
     if (msg_type == FIX::MsgType_NewOrderSingle) {
+        order.ordStatus = FIX::OrdStatus_PENDING_NEW;
         message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
-        message.setField(FIX::OrdType(order.ord_type));
-        if (order.ord_type == FIX::OrdType_LIMIT) {
+        message.setField(FIX::OrdType(order.ordType));
+        if (order.ordType == FIX::OrdType_LIMIT) {
             message.setField(FIX::Price(entrust.m_price));
         }
-        message.setField(FIX::OrderQty(entrust.m_order_qty));
-        message.setField(FIX::SecurityType(order.security_type));
+        message.setField(FIX::OrderQty(entrust.m_orderQty));
+        message.setField(FIX::SecurityType(order.securityType));
         message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
-        message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
+        message.setField(FIX::ClOrdID(entrust.m_clOrdId));
         message.setField(FIX::Side(order.side));
         if (order.exchange.length() > 0) {
             message.setField(FIX::ExDestination(order.exchange));
@@ -130,45 +131,47 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         if (order.account.length() > 0) {
             message.setField(FIX::Account(order.account));
         }
-        message.setField(FIX::PositionEffect(order.open_close));
+        message.setField(FIX::PositionEffect(order.positionEffect));
 
         FIX42::NewOrderSingle::NoTradingSessions sessions;
-        FIX::TradingSessionID session_id(order.trading_session_id);
+        FIX::TradingSessionID session_id(order.tradingSessionId);
         sessions.set(session_id);
 
         message.addGroup(sessions);
 
     }
     if (msg_type == FIX::MsgType_OrderCancelReplaceRequest) {
+        order.ordStatus = FIX::OrdStatus_PENDING_REPLACE;
         if (!order.account.empty()) {
             message.setField(FIX::Account(order.account));
         }
-        message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
-        message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
+        message.setField(FIX::ClOrdID(entrust.m_clOrdId));
+        message.setField(FIX::OrigClOrdID(entrust.m_origClOrdId));
         message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
         message.setField(FIX::Side(order.side));
-        message.setField(FIX::OrderQty(entrust.m_order_qty));
-        message.setField(FIX::OrdType(order.ord_type));
-        if (order.ord_type == FIX::OrdType_LIMIT) {
+        message.setField(FIX::OrderQty(entrust.m_orderQty));
+        message.setField(FIX::OrdType(order.ordType));
+        if (order.ordType == FIX::OrdType_LIMIT) {
             message.setField(FIX::Price(entrust.m_price));
         }
     }
     if (msg_type == FIX::MsgType_OrderCancelRequest) {
+        order.ordStatus = FIX::OrdStatus_PENDING_CANCEL;
         if (!order.account.empty()) {
             message.setField(FIX::Account(order.account));
         }
-        message.setField(FIX::ClOrdID(entrust.m_cl_ord_id));
-        message.setField(FIX::OrigClOrdID(entrust.m_orig_cl_ord_id));
+        message.setField(FIX::ClOrdID(entrust.m_clOrdId));
+        message.setField(FIX::OrigClOrdID(entrust.m_origClOrdId));
         message.setField(FIX::Symbol(ClientApplication::trim(order.symbol)));
         message.setField(FIX::Side(order.side));
-        message.setField(FIX::OrderQty(entrust.m_order_qty));
+        message.setField(FIX::OrderQty(entrust.m_orderQty));
     }
 
     bool res = FIX::Session::sendToTarget(message);
     if (res) {
         order.update = FORBID_UPDATE;
-        this->entrust_map.insert(std::make_pair(entrust.m_cl_ord_id, entrust));
-        this->order_map.insert(std::make_pair(order.order_id, order));
+        this->entrust_map.insert(std::make_pair(entrust.m_clOrdId, entrust));
+        this->order_map.insert(std::make_pair(order.orderId, order));
 
         this->emitPlaceOrder(order);
     }
@@ -184,16 +187,16 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
     if (!entrust) {
         return;
     }
-    auto order = this->getOrder(entrust->m_order_id);
+    auto order = this->getOrder(entrust->m_orderId);
     if (!order) {
         return;
     }
-    report.order_id = order->order_id;
+    report.order_id = order->orderId;
     report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
     report.symbol = order->symbol;
     report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
-    report.cl_ord_id = entrust->m_cl_ord_id;
-    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
+    report.cl_ord_id = entrust->m_clOrdId;
+    report.orig_cl_ord_id = entrust->m_origClOrdId;
     report.exec_id = ClientApplication::getValue(m, FIX::FIELD::ExecID);
     report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
     report.exec_type = ClientApplication::getValue(m, FIX::FIELD::ExecType);
@@ -203,20 +206,23 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
     report.cum_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::CumQty));
     report.leaves_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::LeavesQty));
 
+
+
     //订单进入终止状态
     if (ClientApplication::isFinalState(report.exec_type[0])) {
         order->update = FORBID_UPDATE;
     } else {
         order->update = CAN_UPDATE;
     }
+    order->ordStatus = report.ord_status[0];
     if (FIX::ExecType_NEW == report.exec_type[0]) {
-        order->in_market = order->on_load;
-        order->on_load = "";
+        order->inMarket = order->onRoad;
+        order->onRoad = "";
     }
     //改单确认
     if (FIX::ExecType_REPLACED == report.exec_type[0]) {
-        order->in_market = order->on_load;
-        order->on_load = "";
+        order->inMarket = order->onRoad;
+        order->onRoad = "";
     }
     auto item = this->reportMap.find(report.order_id);
     if (item == this->reportMap.end()) {
@@ -234,19 +240,19 @@ void ClientApplication::onMessage(const FIX42::OrderCancelReject &m, const FIX::
     report.cl_ord_id = ClientApplication::getValue(m, FIX::FIELD::ClOrdID);
 
     auto entrust = this->getEntrust(report.cl_ord_id);
-    auto order = this->getOrder(entrust->m_order_id);
+    auto order = this->getOrder(entrust->m_orderId);
 
-    order->update=CAN_UPDATE;
-    order->on_load = "";
+    order->update = CAN_UPDATE;
+    order->onRoad = "";
 
-    report.order_id = order->order_id;
+    report.order_id = order->orderId;
     report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
     report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
 
     report.symbol = order->symbol;
     report.side = order->side == FIX::Side_BUY ? "Buy" : (order->side == FIX::Side_SELL) ? "Sell" : "Sell_Short";
-    report.cl_ord_id = entrust->m_cl_ord_id;
-    report.orig_cl_ord_id = entrust->m_orig_cl_ord_id;
+    report.cl_ord_id = entrust->m_clOrdId;
+    report.orig_cl_ord_id = entrust->m_origClOrdId;
 
     auto item = this->reportMap.find(report.order_id);
     if (item == this->reportMap.end()) {
@@ -279,14 +285,14 @@ void ClientApplication::onMessage(const FIX42::Reject &m, const FIX::SessionID &
 
     String clOrdId = ClientApplication::getValue(message, FIX::FIELD::ClOrdID);
     auto entrust = this->getEntrust(clOrdId);
-    auto order = this->getOrder(entrust->m_order_id);
+    auto order = this->getOrder(entrust->m_orderId);
 
     order->update = FORBID_UPDATE;
-
+    order->ordStatus = FIX::OrdStatus_REJECTED;
     auto report = ClientExecutionReport();
-    //report.order_id =
-    report.order_id = entrust->m_order_id;
-    report.cl_ord_id = entrust->m_cl_ord_id;
+    //report.orderId =
+    report.order_id = entrust->m_orderId;
+    report.cl_ord_id = entrust->m_clOrdId;
     report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
     report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
     report.symbol = order->symbol;
@@ -324,17 +330,18 @@ void ClientApplication::onMessage(const FIX42::BusinessMessageReject &m, const F
 
     String clOrdId = ClientApplication::getValue(message, FIX::FIELD::ClOrdID);
     auto entrust = this->getEntrust(clOrdId);
-    auto order = this->getOrder(entrust->m_order_id);
-    if (entrust->m_msg_type == FIX::MsgType_NewOrderSingle) {
+    auto order = this->getOrder(entrust->m_orderId);
+    if (entrust->m_msgType == FIX::MsgType_NewOrderSingle) {
         order->update = FORBID_UPDATE;
+        order->ordStatus = FIX::OrdStatus_REJECTED;
     } else {
         order->update = CAN_UPDATE;
     }
 
     auto report = ClientExecutionReport();
-    //report.order_id =
-    report.order_id = entrust->m_order_id;
-    report.cl_ord_id = entrust->m_cl_ord_id;
+    //report.orderId =
+    report.order_id = entrust->m_orderId;
+    report.cl_ord_id = entrust->m_clOrdId;
     report.text = ClientApplication::getValue(m, FIX::FIELD::Text);
     report.msg_seq_num = m.getHeader().getField(FIX::FIELD::MsgSeqNum);
     report.symbol = order->symbol;

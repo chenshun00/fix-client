@@ -6,6 +6,7 @@
 #include <QMenu>
 
 #include "CancelDialog.h"
+#include "AmendDialog.h"
 
 FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
                      std::unique_ptr<FIX::FileStoreFactory> fileStoreFactory,
@@ -110,34 +111,84 @@ QString FixWidget::getRowOrderId(int rowIndex) {
     return "";
 }
 
-void FixWidget::handleAmend() {
-    auto orderId = this->getRowOrderId(this->currentRowIndex);
+QString FixWidget::getShowValues(char ordStatus, double ordQty, double cumQty) {
+    switch (ordStatus) {
+        case FIX::OrdStatus_PENDING_NEW:
+            return "待报";
+        case FIX::OrdStatus_PENDING_CANCEL:
+            return "待撤";
+        case FIX::OrdStatus_PENDING_REPLACE:
+            return "待改";
+        case FIX::OrdStatus_NEW:
+            return "已报";
+        case FIX::OrdStatus_PARTIALLY_FILLED:
+            return "部成";
+        case FIX::OrdStatus_FILLED:
+            return "部成";
+        case FIX::OrdStatus_CANCELED:
+            return "已撤";
+        case FIX::OrdStatus_EXPIRED:
+            return "过期";
+        case FIX::OrdStatus_REPLACED:
+            if (cumQty == 0) {
+                return "已报";
+            }
+            return "部成";
+        default:
+            return "状态未知";
+    }
+}
 
+void FixWidget::handleAmend() {
+    auto orderId = this->getRowOrderId(this->currentRowIndex).toStdString();
+    auto order = this->m_client->getOrder(orderId);
+    if (!order) {
+        spdlog::info("orderId: {}", orderId);
+        QMessageBox::warning(this, "Note", "订单不存在");
+        return;
+    }
+    if (!order->update) {
+        QMessageBox::warning(this, "Note", "当前状态不能撤单");
+        return;
+    }
+    AmendContext amend{order->orderId, order->price, order->ordQty};
+    AmendDialog dialog(amend, this);
+    int result = dialog.exec();
+    if (result == QDialog::Accepted) {
+
+        //点击了确认按钮
+        Entrust entrust(orderId, FixWidget::getId(),
+                        order->inMarket, FIX::MsgType_OrderCancelReplaceRequest,
+                        order->ordQty - order->cumQty, order->price);
+        auto res = this->m_client->send(*order, entrust);
+        if (!res) {
+            QMessageBox::warning(this, "ERROR", "撤单失败");
+        }
+    } else if (result == QDialog::Rejected) {
+        // 点击了取消按钮或其他方式关闭了对话框
+    }
 }
 
 
 void FixWidget::handleCancel() {
     auto orderId = this->getRowOrderId(this->currentRowIndex).toStdString();
-
+    auto order = this->m_client->getOrder(orderId);
+    if (!order) {
+        spdlog::info("orderId: {}", orderId);
+        QMessageBox::warning(this, "Note", "订单不存在");
+        return;
+    }
+    if (!order->update) {
+        QMessageBox::warning(this, "Note", "当前状态不能撤单");
+        return;
+    }
     CancelDialog dialog(this); // 将this作为父窗口
     int result = dialog.exec();
     if (result == QDialog::Accepted) {
         //点击了确认按钮
-        auto order = this->m_client->getOrder(orderId);
-        if (!order) {
-            spdlog::info("orderId: {}", orderId);
-            QMessageBox::warning(this, "Note", "订单不存在");
-            return;
-        }
-        if (!order->update) {
-            QMessageBox::warning(this, "Note", "当前状态不能撤单");
-            return;
-        }
-
-        auto inMarket = order->in_market;
         Entrust entrust(orderId, FixWidget::getId(),
-                        inMarket, FIX::MsgType_OrderCancelRequest,
-                        order->order_qty - order->cum_qty, order->price);
+                        order->inMarket, FIX::MsgType_OrderCancelRequest,
+                        order->ordQty - order->cumQty, order->price);
         auto res = this->m_client->send(*order, entrust);
         if (!res) {
             QMessageBox::warning(this, "ERROR", "撤单失败");
@@ -169,15 +220,16 @@ void FixWidget::logout(const FIX::SessionID &s) {
 void FixWidget::receiveOrder(const Order &order) {
     int rowPosition = 0;
     ui->OrderTable->insertRow(rowPosition);
-    ui->OrderTable->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(order.order_id)));
+    ui->OrderTable->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(order.orderId)));
     ui->OrderTable->setItem(rowPosition, 1, new QTableWidgetItem(QString::fromStdString(order.symbol)));
-    ui->OrderTable->setItem(rowPosition, 2, new QTableWidgetItem(QString(QChar(order.ord_type))));
+    ui->OrderTable->setItem(rowPosition, 2, new QTableWidgetItem(QString(QChar(order.ordType))));
     ui->OrderTable->setItem(rowPosition, 3, new QTableWidgetItem(QString::number(order.price)));
-    ui->OrderTable->setItem(rowPosition, 4, new QTableWidgetItem(QString::fromStdString(order.ord_status)));
+    ui->OrderTable->setItem(rowPosition, 4, new QTableWidgetItem(
+            FixWidget::getShowValues(order.ordStatus, order.ordQty, order.cumQty)));
     ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem(QString(QChar(order.side))));
-    ui->OrderTable->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(order.order_qty)));
-    ui->OrderTable->setItem(rowPosition, 7, new QTableWidgetItem(QString::number(order.cum_qty)));
-    ui->OrderTable->setItem(rowPosition, 8, new QTableWidgetItem(QString::number(order.leaves_qty)));
+    ui->OrderTable->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(order.ordQty)));
+    ui->OrderTable->setItem(rowPosition, 7, new QTableWidgetItem(QString::number(order.cumQty)));
+    ui->OrderTable->setItem(rowPosition, 8, new QTableWidgetItem(QString::number(order.leavesQty)));
 
     //ui->OrderTable->currentItem()
 }
@@ -215,9 +267,9 @@ void FixWidget::order() {
     }
 
     Order order;
-    order.send_comp_id = fix_session_id.getSenderCompID().getString();
-    order.target_comp_id = fix_session_id.getTargetCompID().getString();
-    order.begin_string = fix_session_id.getBeginString().getString();
+    order.sendCompId = fix_session_id.getSenderCompID().getString();
+    order.targetCompId = fix_session_id.getTargetCompID().getString();
+    order.beginString = fix_session_id.getBeginString().getString();
 
     if (!exchange.isEmpty()) {
         order.exchange = exchange.toStdString();
@@ -226,31 +278,31 @@ void FixWidget::order() {
         order.account = account.toStdString();
     }
     order.side = side == "Buy" ? FIX::Side_BUY : side == "Sell" ? FIX::Side_SELL : FIX::Side_SELL_SHORT;
-    order.open_close = position_effect == "Open" ? FIX::PositionEffect_OPEN : FIX::PositionEffect_CLOSE;
+    order.positionEffect = position_effect == "Open" ? FIX::PositionEffect_OPEN : FIX::PositionEffect_CLOSE;
 
-    order.order_qty = quantity.toDouble();
-    order.security_type = type.toStdString();
-    order.ord_type = ord_Type == "Limit" ? FIX::OrdType_LIMIT : FIX::OrdType_MARKET;
-    if (order.ord_type == FIX::OrdType_LIMIT) {
+    order.ordQty = quantity.toDouble();
+    order.securityType = type.toStdString();
+    order.ordType = ord_Type == "Limit" ? FIX::OrdType_LIMIT : FIX::OrdType_MARKET;
+    if (order.ordType == FIX::OrdType_LIMIT) {
         order.price = price.toDouble();
     } else {
         order.price = 0;
     }
     order.symbol = symbol.toStdString();
-    order.order_id = FixWidget::getId();
+    order.orderId = FixWidget::getId();
 
-    Entrust entrust(order.order_id, order.order_id, "", "D", order.order_qty, order.price);
-    order.on_load = entrust.m_cl_ord_id;
-    order.cum_qty = 0;
-    order.leaves_qty = order.order_qty;
+    Entrust entrust(order.orderId, order.orderId, "", "D", order.ordQty, order.price);
+    order.onRoad = entrust.m_clOrdId;
+    order.cumQty = 0;
+    order.leavesQty = order.ordQty;
 
     auto pbtn = qobject_cast<QRadioButton *>(ui->Trading_Session->checkedButton());
     QString name = pbtn->objectName();
 
     if (QString::compare(name, "Trading_Session_0") == 0) {
-        order.trading_session_id = "0";
+        order.tradingSessionId = "0";
     } else if (QString::compare(name, "Trading_Session_1") == 0) {
-        order.trading_session_id = "1";
+        order.tradingSessionId = "1";
     } else {
         QMessageBox::warning(this, "盘前盘后参数错误", "参数错误");
         return;

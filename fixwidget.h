@@ -36,13 +36,16 @@ public:
 public slots:
 
     void order();
+
     void logon(const FIX::SessionID &); // 接收信号的槽
     void logout(const FIX::SessionID &); // 接收信号的槽
     void receiveOrder(const Order &); // 接收信号的槽
     void showContextMenu(const QPoint &);
+
     void showReport(int row, int column);
 
 private slots:
+
     void setupCustomFeatures(); // 自定义设置
 
 private:
@@ -59,10 +62,14 @@ private:
     bool check(const QString &, const QString &);
 
     int currentRowIndex = -1;
+
     void handleAmend();
+
     void handleCancel();
 
     QString getRowOrderId(int rowIndex);
+
+    static QString getShowValues(char ordStatus, double ordQty, double cumQty);
 };
 
 #endif // FIXWIDGET_H

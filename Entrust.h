@@ -9,13 +9,19 @@ const int CAN_UPDATE = 1;
 
 typedef std::string String;
 
+struct AmendContext {
+    String orderId;
+    double price{};
+    double ordQty{};
+} Amend;
+
 class Entrust {
 public:
-    String m_order_id;
-    String m_cl_ord_id;
-    String m_orig_cl_ord_id;
-    String m_msg_type;
-    double m_order_qty;
+    String m_orderId;
+    String m_clOrdId;
+    String m_origClOrdId;
+    String m_msgType;
+    double m_orderQty;
     double m_price;
 
 public:
@@ -24,9 +30,9 @@ public:
             String orig_cl_ord_id,
             String msg_type,
             double order_qty,
-            double price) : m_order_id(std::move(order_id)), m_cl_ord_id(std::move(cl_ord_id)),
-                            m_orig_cl_ord_id(std::move(orig_cl_ord_id)),
-                            m_msg_type(std::move(msg_type)), m_order_qty(order_qty), m_price(price) {};
+            double price) : m_orderId(std::move(order_id)), m_clOrdId(std::move(cl_ord_id)),
+                            m_origClOrdId(std::move(orig_cl_ord_id)),
+                            m_msgType(std::move(msg_type)), m_orderQty(order_qty), m_price(price) {};
 
     ~Entrust() = default;
 };
@@ -34,27 +40,27 @@ public:
 class Order {
 public:
     int update{0};
-    String begin_string;
-    String send_comp_id;
-    String target_comp_id;
-    String order_id;
-    String in_market;
-    String on_load;
+    String beginString;
+    String sendCompId;
+    String targetCompId;
+    String orderId;
+    String inMarket;
+    String onRoad;
     String symbol;
-    double order_qty;
+    double ordQty;
     char side;
-    char ord_type;
+    char ordType;
     double price;
-    String trading_session_id;
+    String tradingSessionId;
     String exchange;
     String account;
-    String security_type;
-    char open_close;
-    double cum_qty = 0;
-    double leaves_qty = 0;
-    String ord_status;
+    String securityType;
+    char positionEffect;
+    double cumQty = 0;
+    double leavesQty = 0;
+    char ordStatus;
 public:
-    Order(/* args */) {}
+    Order(/* args */) = default;
 
     ~Order() = default;
 };
