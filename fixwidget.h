@@ -9,6 +9,9 @@
 #include "spdlog/logger.h"
 
 #include "map"
+#include <iostream>
+#include <random>
+#include <cassert>
 
 #include "ClientApplication.h"
 #include "FixClientLogFactory.h"
@@ -49,13 +52,15 @@ private slots:
     void setupCustomFeatures(); // 自定义设置
 
 private:
-
+    int id;
     std::unique_ptr<FIX::SessionSettings> m_sessionSettings;
     std::unique_ptr<FIX::FileStoreFactory> m_fileStoreFactory;
     std::unique_ptr<FixClientLogFactory> m_fixClientLogFactory;
     std::unique_ptr<ClientApplication> m_client;
     FIX::ThreadedSocketInitiator m_initiator;
     Ui::FixWidget *ui;
+
+    void init();
 
     static String getId();
 
@@ -68,6 +73,11 @@ private:
     void handleCancel();
 
     QString getRowOrderId(int rowIndex);
+
+    std::string getStartOrderId() {
+        id++;
+        return std::to_string(id);
+    }
 
     static QString getShowValues(char ordStatus, double ordQty, double cumQty);
 };

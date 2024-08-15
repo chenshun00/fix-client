@@ -41,11 +41,23 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
     connect(m_client.get(), &ApplicationBridge::logon, this, &FixWidget::logon);
     connect(m_client.get(), &ApplicationBridge::logout, this, &FixWidget::logout);
     connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
+    this->init();
 }
 
 void FixWidget::setupCustomFeatures() {
     connect(ui->OrderTable, &QTableWidget::customContextMenuRequested, this, &FixWidget::showContextMenu);
     connect(ui->OrderTable, &QTableWidget::cellDoubleClicked, this, &FixWidget::showReport);
+}
+
+void FixWidget::init() {
+    // 创建随机数引擎
+    std::random_device rd;  // 用于获取随机种子
+    std::mt19937 gen(rd()); // 使用Mersenne Twister算法生成随机数
+    std::uniform_int_distribution<> dis(10000, 99999); // 分布范围从10000到99999
+
+    // 生成一个随机的5位数
+    int startNumber = dis(gen);
+    this->id = startNumber;
 }
 
 void FixWidget::showReport(int row, int column) {
@@ -148,7 +160,7 @@ void FixWidget::handleAmend() {
         return;
     }
     if (!order->update) {
-        QMessageBox::warning(this, "Note", "当前状态不能撤单");
+        QMessageBox::warning(this, "Note", "当前状态不能改单");
         return;
     }
     AmendContext amend{order->orderId, order->price, order->ordQty};
@@ -157,7 +169,7 @@ void FixWidget::handleAmend() {
     if (result == QDialog::Accepted) {
 
         //点击了确认按钮
-        Entrust entrust(orderId, FixWidget::getId(),
+        Entrust entrust(orderId, this->getStartOrderId(),
                         order->inMarket, FIX::MsgType_OrderCancelReplaceRequest,
                         order->ordQty - order->cumQty, order->price);
         auto res = this->m_client->send(*order, entrust);
@@ -186,7 +198,7 @@ void FixWidget::handleCancel() {
     int result = dialog.exec();
     if (result == QDialog::Accepted) {
         //点击了确认按钮
-        Entrust entrust(orderId, FixWidget::getId(),
+        Entrust entrust(orderId, this->getStartOrderId(),
                         order->inMarket, FIX::MsgType_OrderCancelRequest,
                         order->ordQty - order->cumQty, order->price);
         auto res = this->m_client->send(*order, entrust);
@@ -289,7 +301,7 @@ void FixWidget::order() {
         order.price = 0;
     }
     order.symbol = symbol.toStdString();
-    order.orderId = FixWidget::getId();
+    order.orderId = this->getStartOrderId();
 
     Entrust entrust(order.orderId, order.orderId, "", "D", order.ordQty, order.price);
     order.onRoad = entrust.m_clOrdId;

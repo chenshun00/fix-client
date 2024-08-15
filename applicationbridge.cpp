@@ -12,3 +12,7 @@ void ApplicationBridge::emitLogout(const FIX::SessionID &s) {
 void ApplicationBridge::emitPlaceOrder(const Order &order) {
     emit placeOrder(order);
 }
+
+void ApplicationBridge::emitOrderChanged(const Order &order) {
+    emit orderChanged(order);
+}

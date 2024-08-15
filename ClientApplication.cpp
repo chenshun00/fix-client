@@ -112,10 +112,10 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
     message.getHeader().setField(FIX::MsgType(msg_type));
 
     message.setField(FIX::TransactTime(FIX::UtcTimeStamp::nowUtc(), 6));
+    message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
 
     if (msg_type == FIX::MsgType_NewOrderSingle) {
         order.ordStatus = FIX::OrdStatus_PENDING_NEW;
-        message.setField(FIX::HandlInst(FIX::HandlInst_AUTOMATED_EXECUTION_NO_INTERVENTION));
         message.setField(FIX::OrdType(order.ordType));
         if (order.ordType == FIX::OrdType_LIMIT) {
             message.setField(FIX::Price(entrust.m_price));
@@ -171,9 +171,12 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
     if (res) {
         order.update = FORBID_UPDATE;
         this->entrust_map.insert(std::make_pair(entrust.m_clOrdId, entrust));
-        this->order_map.insert(std::make_pair(order.orderId, order));
-
-        this->emitPlaceOrder(order);
+        if (this->order_map.find(order.orderId) == this->order_map.end()) {
+            this->order_map.insert(std::make_pair(order.orderId, order));
+            this->emitOrderChanged(order);
+        } else {
+            this->emitPlaceOrder(order);
+        }
     }
     return res;
 }

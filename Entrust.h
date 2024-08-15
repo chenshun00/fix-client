@@ -13,7 +13,7 @@ struct AmendContext {
     String orderId;
     double price{};
     double ordQty{};
-} Amend;
+};
 
 class Entrust {
 public:

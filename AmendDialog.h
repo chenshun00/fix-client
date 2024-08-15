@@ -5,6 +5,8 @@
 
 #include "Entrust.h"
 
+#include "ui_amenddialog.h"
+
 namespace Ui {
     class AmendDialog;
 }
