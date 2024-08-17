@@ -1,0 +1,6 @@
+[submodule "quickfix"]
+	path = quickfix
+	url = https://github.com/quickfix/quickfix.git
+[submodule "spdlog"]
+	path = spdlog
+	url = https://github.com/gabime/spdlog
