@@ -173,9 +173,9 @@ bool ClientApplication::send(Order &order, Entrust &entrust) {
         this->entrust_map.insert(std::make_pair(entrust.m_clOrdId, entrust));
         if (this->order_map.find(order.orderId) == this->order_map.end()) {
             this->order_map.insert(std::make_pair(order.orderId, order));
-            this->emitOrderChanged(order);
-        } else {
             this->emitPlaceOrder(order);
+        } else {
+            this->emitOrderChanged(order);
         }
     }
     return res;
@@ -209,8 +209,6 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
     report.cum_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::CumQty));
     report.leaves_qty = std::stod(ClientApplication::getValue(m, FIX::FIELD::LeavesQty));
 
-
-
     //订单进入终止状态
     if (ClientApplication::isFinalState(report.exec_type[0])) {
         order->update = FORBID_UPDATE;
@@ -227,6 +225,10 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
         order->inMarket = order->onRoad;
         order->onRoad = "";
     }
+    //全成
+    if (FIX::ExecType_TRADE == report.exec_type[0] && report.cum_qty == order->ordQty) {
+        order->update = FORBID_UPDATE;
+    }
     auto item = this->reportMap.find(report.order_id);
     if (item == this->reportMap.end()) {
         ReportList list;
@@ -235,6 +237,7 @@ void ClientApplication::onMessage(const FIX42::ExecutionReport &m, const FIX::Se
     } else {
         item->second.push_back(report);
     }
+    this->emitOrderChanged(*order);
 }
 
 void ClientApplication::onMessage(const FIX42::OrderCancelReject &m, const FIX::SessionID &s) {
@@ -265,6 +268,7 @@ void ClientApplication::onMessage(const FIX42::OrderCancelReject &m, const FIX::
     } else {
         item->second.push_back(report);
     }
+    this->emitOrderChanged(*order);
 }
 
 void ClientApplication::onMessage(const FIX42::Reject &m, const FIX::SessionID &s) {
@@ -310,6 +314,7 @@ void ClientApplication::onMessage(const FIX42::Reject &m, const FIX::SessionID &
     } else {
         reportItem->second.push_back(report);
     }
+    this->emitOrderChanged(*order);
 }
 
 void ClientApplication::onMessage(const FIX42::BusinessMessageReject &m, const FIX::SessionID &s) {
@@ -359,6 +364,7 @@ void ClientApplication::onMessage(const FIX42::BusinessMessageReject &m, const F
     } else {
         reportItem->second.push_back(report);
     }
+    this->emitOrderChanged(*order);
 }
 
 String ClientApplication::getValue(const FIX::Message &m, int tag) {

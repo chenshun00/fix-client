@@ -87,7 +87,8 @@ private:
         return FIX::ExecType_REJECTED == execType
                || FIX::ExecType_CANCELED == execType
                || FIX::ExecType_EXPIRED == execType
-               || FIX::ExecType_DONE_FOR_DAY == execType;
+               || FIX::ExecType_DONE_FOR_DAY == execType
+               || FIX::ExecType_FILL == execType;
     }
 
     typedef std::vector<ClientExecutionReport> ReportList;

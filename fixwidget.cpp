@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QUuid>
 #include <utility>
+
 #include <QMenu>
 
 #include "CancelDialog.h"
@@ -28,10 +29,13 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
     //禁止编辑
     ui->OrderTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+    this->init();
+
     //自适应大小
     ui->Report->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->Report->horizontalHeader()->setStretchLastSection(true);
     ui->Report->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->Report->setEditTriggers(QAbstractItemView::NoEditTriggers);
     //禁止编辑
 
     this->setupCustomFeatures(); // 自定义设置
@@ -41,7 +45,7 @@ FixWidget::FixWidget(std::unique_ptr<FIX::SessionSettings> sessionSettings,
     connect(m_client.get(), &ApplicationBridge::logon, this, &FixWidget::logon);
     connect(m_client.get(), &ApplicationBridge::logout, this, &FixWidget::logout);
     connect(m_client.get(), &ApplicationBridge::placeOrder, this, &FixWidget::receiveOrder);
-    this->init();
+    connect(m_client.get(), &ApplicationBridge::orderChanged, this, &FixWidget::orderChanged);
 }
 
 void FixWidget::setupCustomFeatures() {
@@ -63,19 +67,21 @@ void FixWidget::init() {
 void FixWidget::showReport(int row, int column) {
     auto qsOrderId = this->getRowOrderId(row);
     String orderId = qsOrderId.toStdString();
-    ui->Report->clearContents();
-
-    int rowCount = ui->Report->rowCount();
-    for (int i = 0; i < rowCount; i++) {
-        ui->Report->removeRow(i);
-    }
-
     if (orderId.empty()) {
+        spdlog::error("orderId is empty, {}", row);
+        ui->Report->clearContents();
+        ui->Report->setRowCount(0);
         return;
     }
 
     std::vector<ClientExecutionReport> reports;
     m_client->getReportList(orderId, reports);
+
+    ui->Report->clearContents();
+    auto rowCount = ui->Report->rowCount();
+    for (int i = 0; i < rowCount; ++i) {
+        ui->Report->removeRow(i);
+    }
 
     int rowPosition = 0;
     for (const auto &item : reports) {
@@ -100,18 +106,17 @@ void FixWidget::showReport(int row, int column) {
 }
 
 void FixWidget::showContextMenu(const QPoint &pos) {
+    // 获取鼠标点击位置的行索引
+    QModelIndex index = ui->OrderTable->indexAt(pos);
+    if (index.isValid()) {
+        currentRowIndex = index.row();
+        spdlog::info("click row :{}", currentRowIndex);
+    }
     QMenu menu(this);
     QAction *amend = menu.addAction("改单");
     QAction *cancel = menu.addAction("撤单");
     connect(amend, &QAction::triggered, this, &FixWidget::handleAmend);
     connect(cancel, &QAction::triggered, this, &FixWidget::handleCancel);
-    menu.exec(ui->OrderTable->mapToGlobal(pos));
-
-    // 获取鼠标点击位置的行索引
-    QModelIndex index = ui->OrderTable->indexAt(pos);
-    if (index.isValid()) {
-        currentRowIndex = index.row();
-    }
     menu.exec(ui->OrderTable->mapToGlobal(pos));
 }
 
@@ -123,31 +128,61 @@ QString FixWidget::getRowOrderId(int rowIndex) {
     return "";
 }
 
-QString FixWidget::getShowValues(char ordStatus, double ordQty, double cumQty) {
+QTableWidgetItem *FixWidget::getShowValues(char ordStatus, double ordQty, double cumQty, QTableWidgetItem *item) {
+    if (item == nullptr) {
+        item = new QTableWidgetItem();
+    }
+
     switch (ordStatus) {
         case FIX::OrdStatus_PENDING_NEW:
-            return "待报";
+            item->setText("待报");
+            item->setBackground(Qt::darkYellow);
+            return item;
         case FIX::OrdStatus_PENDING_CANCEL:
-            return "待撤";
+            item->setBackground(Qt::darkYellow);
+            item->setText("待撤");
+            return item;
         case FIX::OrdStatus_PENDING_REPLACE:
-            return "待改";
+            item->setBackground(Qt::darkYellow);
+            item->setText("待改");
+            return item;
         case FIX::OrdStatus_NEW:
-            return "已报";
+            item->setText("已报");
+            item->setBackground(Qt::cyan);
+            return item;
         case FIX::OrdStatus_PARTIALLY_FILLED:
-            return "部成";
+            item->setText("部成");
+            item->setBackground(Qt::green);
+            return item;
         case FIX::OrdStatus_FILLED:
-            return "部成";
+            item->setBackground(Qt::green);
+            item->setText("全成");
+            return item;
         case FIX::OrdStatus_CANCELED:
-            return "已撤";
+            item->setBackground(Qt::lightGray);
+            item->setText("已撤");
+            return item;
         case FIX::OrdStatus_EXPIRED:
-            return "过期";
+            item->setBackground(Qt::lightGray);
+            item->setText("过期");
+            return item;
         case FIX::OrdStatus_REPLACED:
             if (cumQty == 0) {
-                return "已报";
+                item->setBackground(Qt::cyan);
+                item->setText("已报");
+                return item;
             }
-            return "部成";
+            item->setBackground(Qt::green);
+            item->setText("部成");
+            return item;
+        case FIX::OrdStatus_REJECTED:
+            item->setBackground(Qt::red);
+            item->setText("拒绝");
+            return item;
         default:
-            return "状态未知";
+            item->setBackground(Qt::gray);
+            item->setText("状态未知");
+            return item;
     }
 }
 
@@ -155,7 +190,7 @@ void FixWidget::handleAmend() {
     auto orderId = this->getRowOrderId(this->currentRowIndex).toStdString();
     auto order = this->m_client->getOrder(orderId);
     if (!order) {
-        spdlog::info("orderId: {}", orderId);
+        spdlog::info("this->currentRowIndex:{}, orderId: {}", this->currentRowIndex, orderId);
         QMessageBox::warning(this, "Note", "订单不存在");
         return;
     }
@@ -230,20 +265,83 @@ void FixWidget::logout(const FIX::SessionID &s) {
 }
 
 void FixWidget::receiveOrder(const Order &order) {
+    spdlog::info("FixWidget::receiveOrder, order:{}", order.orderId);
     int rowPosition = 0;
     ui->OrderTable->insertRow(rowPosition);
     ui->OrderTable->setItem(rowPosition, 0, new QTableWidgetItem(QString::fromStdString(order.orderId)));
     ui->OrderTable->setItem(rowPosition, 1, new QTableWidgetItem(QString::fromStdString(order.symbol)));
     ui->OrderTable->setItem(rowPosition, 2, new QTableWidgetItem(QString(QChar(order.ordType))));
     ui->OrderTable->setItem(rowPosition, 3, new QTableWidgetItem(QString::number(order.price)));
-    ui->OrderTable->setItem(rowPosition, 4, new QTableWidgetItem(
-            FixWidget::getShowValues(order.ordStatus, order.ordQty, order.cumQty)));
-    ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem(QString(QChar(order.side))));
+    ui->OrderTable->setItem(rowPosition, 4, FixWidget::getShowValues(order.ordStatus, order.ordQty, order.cumQty));
+
+    if (order.side == FIX::Side_BUY) {
+        if (order.positionEffect == FIX::PositionEffect_OPEN) {
+            ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem("买入开仓"));
+        } else {
+            ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem("买入平仓"));
+        }
+    } else if (order.side == FIX::Side_SELL) {
+        if (order.positionEffect == FIX::PositionEffect_OPEN) {
+            ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem("卖出开仓"));
+        } else {
+            ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem("卖出平仓"));
+        }
+    } else if (order.side == FIX::Side_SELL_SHORT) {
+        ui->OrderTable->setItem(rowPosition, 5, new QTableWidgetItem("沽空"));
+    }
     ui->OrderTable->setItem(rowPosition, 6, new QTableWidgetItem(QString::number(order.ordQty)));
     ui->OrderTable->setItem(rowPosition, 7, new QTableWidgetItem(QString::number(order.cumQty)));
     ui->OrderTable->setItem(rowPosition, 8, new QTableWidgetItem(QString::number(order.leavesQty)));
+    spdlog::info("FixWidget::receiveOrder end, order:{}", order.orderId);
+}
 
-    //ui->OrderTable->currentItem()
+void FixWidget::orderChanged(const Order &order) {
+    spdlog::info("receive orderChanged :{}, ordStatus:{}", order.orderId, order.ordStatus);
+    this->updateOrderTable();
+}
+
+void FixWidget::updateOrderTable() {
+    auto rowCount = ui->OrderTable->rowCount();
+    if (rowCount <= 0) {
+        spdlog::info("no orders");
+        return;
+    }
+    for (int i = 0; i < rowCount; ++i) {
+        auto orderId = this->getRowOrderId(i).toStdString();
+        auto order = m_client->getOrder(orderId);
+        if (order == nullptr) {
+            spdlog::error("order is not exist, row:{}, orderId:{}", i, orderId);
+            continue;
+        }
+
+        int rowPosition = i;
+        {
+            auto price = ui->OrderTable->item(rowPosition, 3);
+            price->setText(QString::number(order->price));
+        }
+
+        {
+            auto ordStatus = ui->OrderTable->item(rowPosition, 4);
+            ui->OrderTable->setItem(rowPosition, 4,
+                                    FixWidget::getShowValues(order->ordStatus, order->ordQty, order->cumQty,
+                                                             ordStatus));
+        }
+
+        {
+            auto ordQty = ui->OrderTable->item(rowPosition, 6);
+            ordQty->setText(QString::number(order->ordQty));
+        }
+
+        {
+            auto cumQty = ui->OrderTable->item(rowPosition, 7);
+            cumQty->setText(QString::number(order->cumQty));
+        }
+
+        {
+            auto leavesQty = ui->OrderTable->item(rowPosition, 8);
+            leavesQty->setText(QString::number(order->leavesQty));
+        }
+    }
 }
 
 void FixWidget::order() {

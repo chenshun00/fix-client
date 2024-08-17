@@ -17,6 +17,8 @@
 #include "FixClientLogFactory.h"
 
 #include <QWidget>
+#include <QTableWidgetItem>
+#include "qobject.h"
 
 #include "memory"
 
@@ -43,6 +45,7 @@ public slots:
     void logon(const FIX::SessionID &); // 接收信号的槽
     void logout(const FIX::SessionID &); // 接收信号的槽
     void receiveOrder(const Order &); // 接收信号的槽
+    void orderChanged(const Order &); // 接收信号的槽
     void showContextMenu(const QPoint &);
 
     void showReport(int row, int column);
@@ -53,6 +56,7 @@ private slots:
 
 private:
     int id;
+    int timeId;
     std::unique_ptr<FIX::SessionSettings> m_sessionSettings;
     std::unique_ptr<FIX::FileStoreFactory> m_fileStoreFactory;
     std::unique_ptr<FixClientLogFactory> m_fixClientLogFactory;
@@ -61,6 +65,8 @@ private:
     Ui::FixWidget *ui;
 
     void init();
+
+    void updateOrderTable();
 
     static String getId();
 
@@ -79,7 +85,7 @@ private:
         return std::to_string(id);
     }
 
-    static QString getShowValues(char ordStatus, double ordQty, double cumQty);
+    static QTableWidgetItem *getShowValues(char ordStatus, double ordQty, double cumQty, QTableWidgetItem * = nullptr);
 };
 
 #endif // FIXWIDGET_H
