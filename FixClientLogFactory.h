@@ -24,12 +24,12 @@ public:
         if (dict.has(FIX::FILE_LOG_PATH)) {
             this->m_path = dict.getString(FIX::FILE_LOG_PATH);
         } else {
-            throw FIX::ConfigError("FileLogPath");
+            throw FIX::ConfigError("Please Set FileLogPath");
         }
 
-//        auto logger = spdlog::rotating_logger_mt("global", this->m_path + "/Logs/RotatingFileLog.txt",
-//                                                 1024 * 1024 * 1024, 5);
-//        spdlog::set_default_logger(logger);
+        auto logger = spdlog::rotating_logger_mt("global", this->m_path + "/Logs/RotatingFileLog.txt",
+                                                 1024 * 1024 * 1024, 5);
+        spdlog::set_default_logger(logger);
     };
 
     explicit FixClientLogFactory(std::string path) : m_path(std::move(path)) {};
